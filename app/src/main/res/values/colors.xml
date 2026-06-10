@@ -2,4 +2,8 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="forno_aquecendo">#DB8307</color>
+    <color name="forno_desligado">#808080</color>
+    <color name="forno_ativo">#04711C</color>
+    <color name="forno_esfriando">#000080</color>
 </resources>
