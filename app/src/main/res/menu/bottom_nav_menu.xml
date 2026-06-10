@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="Dashboard"/>
+
+    <item
+        android:id="@+id/nav_historico"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:title="Histórico"/>
+
+    <item
+        android:id="@+id/nav_alertas"
+        android:icon="@android:drawable/ic_dialog_alert"
+        android:title="Alertas"/>
+
+    <item
+        android:id="@+id/nav_temporizadores"
+        android:icon="@android:drawable/ic_lock_idle_alarm"
+        android:title="Temporizadores"/>
+
+    <item
+        android:id="@+id/nav_perfil"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="Perfil"/>
+
+</menu>
