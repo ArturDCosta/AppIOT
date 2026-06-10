@@ -18,7 +18,10 @@ import java.util.List;import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.monitorforno.adapters.EventoAdapter;
-import com.example.monitorforno.utils.CustomDivisor;
+import com.example.monitorforno.utils.CustomDivisor;import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 
 public class DashboardFragment extends Fragment {
 
@@ -105,6 +108,36 @@ public class DashboardFragment extends Fragment {
         recyclerAlertas.setAdapter(
                 new EventoAdapter(eventos)
         );
+
+        LineChart chartTemperatura =
+                view.findViewById(R.id.chartTemperatura);
+
+        ArrayList<Entry> temperaturas = new ArrayList<>();
+
+        temperaturas.add(new Entry(0, 170));
+        temperaturas.add(new Entry(1, 175));
+        temperaturas.add(new Entry(2, 180));
+        temperaturas.add(new Entry(3, 183));
+        temperaturas.add(new Entry(4, 185));
+        temperaturas.add(new Entry(5, 188));
+
+        LineDataSet dataSet =
+                new LineDataSet(
+                        temperaturas,
+                        "Temperatura (°C)"
+                );
+        dataSet.setLineWidth(3f);
+
+        dataSet.setCircleRadius(5f);
+
+        dataSet.setDrawValues(false);
+
+        LineData lineData =
+                new LineData(dataSet);
+
+        chartTemperatura.setData(lineData);
+
+        chartTemperatura.invalidate();
 
         return view;
     }

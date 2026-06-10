@@ -259,6 +259,34 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Temperatura ao longo do tempo"
+                    android:textStyle="bold"
+                    android:textSize="18sp"/>
+
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chartTemperatura"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"/>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 
 </ScrollView>
