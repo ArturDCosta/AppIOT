@@ -6,4 +6,7 @@
     <color name="forno_desligado">#808080</color>
     <color name="forno_ativo">#04711C</color>
     <color name="forno_esfriando">#000080</color>
+    <color name="alerta_laranja">#FF9800</color>
+    <color name="alerta_vermelho">#F44336</color>
+    <color name="alerta_verde">#4CAF50</color>
 </resources>

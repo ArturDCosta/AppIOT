@@ -7,9 +7,18 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.monitorforno.R;
+import com.example.monitorforno.models.Evento;
 import com.google.android.material.card.MaterialCardView;
+
+import java.util.ArrayList;
+import java.util.List;import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.monitorforno.adapters.EventoAdapter;
+import com.example.monitorforno.utils.CustomDivisor;
 
 public class DashboardFragment extends Fragment {
 
@@ -56,6 +65,46 @@ public class DashboardFragment extends Fragment {
                 );
                 break;
         }
+
+
+        //RecyclerView
+        RecyclerView recyclerAlertas =
+                view.findViewById(R.id.recyclerAlertas);
+
+        List<Evento> eventos = new ArrayList<>();
+
+        eventos.add(
+                new Evento(
+                        "Sistema entrou em alerta",
+                        "18:30"
+                )
+        );
+
+        eventos.add(
+                new Evento(
+                        "Estado crítico",
+                        "18:20"
+                )
+        );
+
+        eventos.add(
+                new Evento(
+                        "Sistema normalizado",
+                        "18:05"
+                )
+        );
+
+        recyclerAlertas.setLayoutManager(
+                new LinearLayoutManager(getContext())
+        );
+
+        recyclerAlertas.addItemDecoration(
+                new CustomDivisor(getContext())
+        );
+
+        recyclerAlertas.setAdapter(
+                new EventoAdapter(eventos)
+        );
 
         return view;
     }
