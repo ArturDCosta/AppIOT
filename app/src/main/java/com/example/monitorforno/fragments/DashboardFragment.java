@@ -14,14 +14,17 @@ import com.example.monitorforno.models.Evento;
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
-import java.util.List;import androidx.recyclerview.widget.LinearLayoutManager;
+import java.util.List;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.monitorforno.adapters.EventoAdapter;
-import com.example.monitorforno.utils.CustomDivisor;import com.github.mikephil.charting.charts.LineChart;
+import com.example.monitorforno.utils.CustomDivisor;
+import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.example.monitorforno.fragments.TemperaturaFragment;
 
 public class DashboardFragment extends Fragment {
 
@@ -39,6 +42,12 @@ public class DashboardFragment extends Fragment {
 
         MaterialCardView cardEstadoForno =
                 view.findViewById(R.id.cardEstadoForno);
+
+        MaterialCardView cardTemperaturaAtual =
+                view.findViewById(R.id.cardTemperaturaAtual);
+
+        MaterialCardView cardUltimaTemperatura =
+                view.findViewById(R.id.cardUltimaTemperatura);
 
         String estado = "FORNO_AQUECENDO";
 
@@ -109,35 +118,29 @@ public class DashboardFragment extends Fragment {
                 new EventoAdapter(eventos)
         );
 
-        LineChart chartTemperatura =
-                view.findViewById(R.id.chartTemperatura);
+        cardTemperaturaAtual.setOnClickListener(v -> {
 
-        ArrayList<Entry> temperaturas = new ArrayList<>();
+            getParentFragmentManager()
+                    .beginTransaction()
+                    .replace(
+                            R.id.fragment_container,
+                            new TemperaturaFragment()
+                    )
+                    .addToBackStack(null)
+                    .commit();
+        });
 
-        temperaturas.add(new Entry(0, 170));
-        temperaturas.add(new Entry(1, 175));
-        temperaturas.add(new Entry(2, 180));
-        temperaturas.add(new Entry(3, 183));
-        temperaturas.add(new Entry(4, 185));
-        temperaturas.add(new Entry(5, 188));
+        cardUltimaTemperatura.setOnClickListener(v -> {
 
-        LineDataSet dataSet =
-                new LineDataSet(
-                        temperaturas,
-                        "Temperatura (°C)"
-                );
-        dataSet.setLineWidth(3f);
-
-        dataSet.setCircleRadius(5f);
-
-        dataSet.setDrawValues(false);
-
-        LineData lineData =
-                new LineData(dataSet);
-
-        chartTemperatura.setData(lineData);
-
-        chartTemperatura.invalidate();
+            getParentFragmentManager()
+                    .beginTransaction()
+                    .replace(
+                            R.id.fragment_container,
+                            new TemperaturaFragment()
+                    )
+                    .addToBackStack(null)
+                    .commit();
+        });
 
         return view;
     }

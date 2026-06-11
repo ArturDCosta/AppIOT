@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -10,37 +12,30 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="20dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <ImageView
+                android:id="@+id/btnVoltar"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_voltar"/>
+
+            <TextView
+                android:id="@+id/txtTituloTemperatura"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="20dp">
+                android:layout_marginStart="8dp"
+                android:text="Temperatura"
+                android:textSize="28sp"
+                android:textStyle="bold"/>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="MonitorForno"
-                    android:textSize="24sp"
-                    android:textStyle="bold"/>
-
-                <TextView
-                    android:id="@+id/txtEstadoSistema"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🟢 Operação Normal"
-                    android:textSize="16sp"/>
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardEstadoForno"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -54,19 +49,44 @@
                 android:padding="24dp">
 
                 <TextView
-                    android:id="@+id/txtTemperaturaAtual"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Temperatura Atual"/>
+
+                <TextView
+                    android:id="@+id/txtTempAtual"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="185°C"
                     android:textSize="42sp"
                     android:textStyle="bold"/>
 
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:orientation="vertical">
+
                 <TextView
-                    android:id="@+id/txtEstadoForno"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="FORNO AQUECENDO"
-                    android:textSize="18sp"/>
+                    android:text="Histórico de Temperatura"
+                    android:textStyle="bold"/>
+
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chartTemperatura"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"/>
 
             </LinearLayout>
 
@@ -79,39 +99,8 @@
             android:orientation="horizontal">
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardTemperaturaAtual"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:cardCornerRadius="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Temperatura Atual"/>
-
-                    <TextView
-                        android:id="@+id/txtAtual"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="185°C"
-                        android:textSize="22sp"
-                        android:textStyle="bold"/>
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardUltimaTemperatura"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 app:cardCornerRadius="16dp">
 
@@ -127,48 +116,13 @@
                         android:text="Última Temp."/>
 
                     <TextView
-                        android:id="@+id/txtUltima"
+                        android:id="@+id/txtUltimaTemperatura"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="184°C"
                         android:textSize="22sp"
                         android:textStyle="bold"/>
-                </LinearLayout>
 
-            </com.google.android.material.card.MaterialCardView>
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:cardCornerRadius="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Sistema"/>
-
-                    <TextView
-                        android:id="@+id/txtSistema"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="SEGURO"
-                        android:textSize="22sp"
-                        android:textStyle="bold"/>
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
@@ -189,15 +143,16 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tempo Ligado"/>
+                        android:text="Estado"/>
 
                     <TextView
-                        android:id="@+id/txtTempoLigado"
+                        android:id="@+id/txtEstadoForno"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="2h 35m"
+                        android:text="AQUECENDO"
                         android:textSize="22sp"
                         android:textStyle="bold"/>
+
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
@@ -207,7 +162,7 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             app:cardCornerRadius="16dp">
 
             <LinearLayout
@@ -219,14 +174,14 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Próximo Temporizador"/>
+                    android:text="Estado do Sistema"/>
 
                 <TextView
-                    android:id="@+id/txtTemporizador"
+                    android:id="@+id/txtEstadoSistema"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="22:00"
-                    android:textSize="24sp"
+                    android:text="SEGURO"
+                    android:textSize="22sp"
                     android:textStyle="bold"/>
 
             </LinearLayout>
@@ -236,7 +191,7 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             app:cardCornerRadius="16dp">
 
             <LinearLayout
@@ -248,14 +203,15 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Últimos Alertas"
-                    android:textStyle="bold"
-                    android:textSize="18sp"/>
+                    android:text="Última Leitura"/>
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerAlertas"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:id="@+id/txtUltimaLeitura"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="19:44:32"
+                    android:textSize="22sp"
+                    android:textStyle="bold"/>
 
             </LinearLayout>
 
