@@ -13,6 +13,9 @@ import com.example.monitorforno.R;
 import com.example.monitorforno.models.Sessao;
 
 import java.util.List;
+import android.content.Intent;
+
+import com.example.monitorforno.activities.DetalhesSessaoActivity;
 
 public class SessaoAdapter
         extends RecyclerView.Adapter<SessaoAdapter.ViewHolder> {
@@ -78,6 +81,36 @@ public class SessaoAdapter
                 );
                 break;
         }
+
+        holder.itemView.setOnClickListener(v -> {
+
+            Intent intent = new Intent(
+                    v.getContext(),
+                    DetalhesSessaoActivity.class
+            );
+
+            intent.putExtra(
+                    "dataSessao",
+                    sessao.getData()
+            );
+
+            intent.putExtra(
+                    "horarioSessao",
+                    sessao.getHorario()
+            );
+
+            intent.putExtra(
+                    "duracaoSessao",
+                    sessao.getDuracao()
+            );
+
+            intent.putExtra(
+                    "estadoSessao",
+                    sessao.getEstado()
+            );
+
+            v.getContext().startActivity(intent);
+        });
     }
 
     @Override

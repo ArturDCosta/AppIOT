@@ -49,7 +49,7 @@ public class DashboardFragment extends Fragment {
         MaterialCardView cardUltimaTemperatura =
                 view.findViewById(R.id.cardUltimaTemperatura);
 
-        String estado = "FORNO_AQUECENDO";
+        String estado = "FORNO_ESFRIANDO";
 
         switch (estado) {
 

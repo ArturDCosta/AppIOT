@@ -8,6 +8,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.graphics.Color;
+import android.widget.TextView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,6 +19,7 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +34,83 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
 
         setContentView(
                 R.layout.activity_detalhes_sessao
+        );
+
+        TextView txtTituloSessao =
+                findViewById(R.id.txtTituloSessao);
+
+        TextView txtInicio =
+                findViewById(R.id.txtInicio);
+
+        TextView txtFim =
+                findViewById(R.id.txtFim);
+
+        TextView txtDuracao =
+                findViewById(R.id.txtDuracao);
+
+        TextView txtEstadoFinal =
+                findViewById(R.id.txtEstadoFinal);
+
+        String data =
+                getIntent().getStringExtra("dataSessao");
+
+        String horario =
+                getIntent().getStringExtra("horarioSessao");
+
+        String duracao =
+                getIntent().getStringExtra("duracaoSessao");
+
+        String estado =
+                getIntent().getStringExtra("estadoSessao");
+
+        txtTituloSessao.setText(
+                "Sessão " + data
+        );
+
+        txtInicio.setText(
+                "Horário: " + horario
+        );
+
+        txtDuracao.setText(
+                "Duração: " + duracao
+        );
+
+        txtEstadoFinal.setText(
+                estado
+        );
+
+        switch (estado) {
+
+            case "FORNO_ATIVO":
+                txtEstadoFinal.setTextColor(
+                        Color.parseColor("#32ad34")
+                );
+                break;
+
+            case "FORNO_AQUECENDO":
+                txtEstadoFinal.setTextColor(
+                        Color.parseColor("#fc9403")
+                );
+                break;
+
+            case "FORNO_ESFRIANDO":
+                txtEstadoFinal.setTextColor(
+                        Color.parseColor("#2426ab")
+                );
+                break;
+
+            case "FORNO_DESLIGADO":
+                txtEstadoFinal.setTextColor(
+                        Color.GRAY
+                );
+                break;
+        }
+
+        MaterialToolbar toolbar =
+                findViewById(R.id.toolbar);
+
+        toolbar.setNavigationOnClickListener(
+                v -> finish()
         );
 
         configurarGrafico();

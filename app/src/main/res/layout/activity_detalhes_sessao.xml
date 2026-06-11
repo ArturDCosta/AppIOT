@@ -12,6 +12,13 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/ic_voltar"
+            app:title="Detalhes da Sessão"/>
+
         <TextView
             android:id="@+id/txtTituloSessao"
             android:layout_width="wrap_content"
