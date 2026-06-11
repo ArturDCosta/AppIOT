@@ -127,19 +127,25 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
                 new ArrayList<>();
 
         temperaturas.add(new Entry(0,120));
-        temperaturas.add(new Entry(1,135));
-        temperaturas.add(new Entry(2,150));
-        temperaturas.add(new Entry(3,170));
-        temperaturas.add(new Entry(4,185));
-        temperaturas.add(new Entry(5,190));
+        temperaturas.add(new Entry(10,135));
+        temperaturas.add(new Entry(20,150));
+        temperaturas.add(new Entry(30,170));
+        temperaturas.add(new Entry(40,185));
+        temperaturas.add(new Entry(50,190));
 
         LineDataSet dataSet =
                 new LineDataSet(
                         temperaturas,
-                        "Temperatura"
+                        "Temperatura (C°)"
                 );
 
         dataSet.setDrawValues(false);
+
+        chart.getXAxis().setTextColor(Color.WHITE);
+
+        chart.getAxisLeft().setTextColor(Color.WHITE);
+
+        chart.getLegend().setTextColor(Color.WHITE);
 
         dataSet.setLineWidth(3f);
 

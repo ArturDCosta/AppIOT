@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.monitorforno.R;
 import com.example.monitorforno.models.EventoSessao;
 
-import java.util.List;
+import java.util.List;import android.graphics.Color;
 
 public class EventoSessaoAdapter
         extends RecyclerView.Adapter<EventoSessaoAdapter.ViewHolder> {
@@ -45,9 +45,35 @@ public class EventoSessaoAdapter
 
         EventoSessao evento = eventos.get(position);
 
-        holder.txtEvento.setText(
-                evento.getDescricao()
-        );
+        String descricao = evento.getDescricao();
+
+        holder.txtEvento.setText(descricao);
+
+        if (descricao.contains("ALERTA")) {
+
+            holder.txtEvento.setTextColor(
+                    Color.parseColor("#fc9403")
+            );
+
+        } else if (descricao.contains("CRITICO_ENTRADA")) {
+
+            holder.txtEvento.setTextColor(
+                    Color.RED
+            );
+
+        } else if (descricao.contains("CRITICO_SAIDA")) {
+
+            holder.txtEvento.setTextColor(
+                    Color.parseColor("#32ad34")
+            );
+
+        } else if (descricao.contains("ERRO_SENSOR")) {
+
+            holder.txtEvento.setTextColor(
+                    Color.parseColor("#2426ab")
+            );
+
+        }
     }
 
     @Override
