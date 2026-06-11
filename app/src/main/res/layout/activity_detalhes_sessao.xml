@@ -61,8 +61,57 @@
                     android:id="@+id/txtEstadoFinal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="FORNO_ATIVO"
+                    android:layout_marginTop="12dp"
+                    android:text="Forno Ativo"
+                    android:textSize="22sp"
                     android:textStyle="bold"/>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Estatísticas da Sessão"
+                    android:textStyle="bold"
+                    android:textSize="18sp"/>
+
+                <TextView
+                    android:id="@+id/txtTempMax"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Temperatura Máx: 215°C"/>
+
+                <TextView
+                    android:id="@+id/txtTempMedia"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Temperatura Média: 187°C"/>
+
+                <TextView
+                    android:id="@+id/txtQtdAlertas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Alertas: 3"/>
+
+                <TextView
+                    android:id="@+id/txtQtdCriticos"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Eventos Críticos: 1"/>
 
             </LinearLayout>
 

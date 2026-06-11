@@ -45,35 +45,45 @@ public class EventoSessaoAdapter
 
         EventoSessao evento = eventos.get(position);
 
-        String descricao = evento.getDescricao();
+        String descricao;
+
+        switch (evento.getDescricao()) {
+
+            case "ALERTA_ENTRADA":
+                descricao = "Sistema entrou em alerta";
+                holder.txtEvento.setTextColor(Color.parseColor("#fc9403"));
+                break;
+
+            case "ALERTA_SAIDA":
+                descricao = "Sistema voltou ao normal";
+                holder.txtEvento.setTextColor(Color.parseColor("#2426ab"));
+                break;
+
+            case "CRITICO_ENTRADA":
+                descricao = "Estado crítico detectado";
+                holder.txtEvento.setTextColor(Color.parseColor("#ed0909"));
+                break;
+
+            case "CRITICO_SAIDA":
+                descricao = "Estado crítico encerrado";
+                holder.txtEvento.setTextColor(Color.parseColor("#32ad34"));
+                break;
+
+            case "ERRO_SENSOR_ENTRADA":
+                descricao = "Falha no sensor";
+                holder.txtEvento.setTextColor(Color.parseColor("#ebd915"));
+                break;
+
+            case "ERRO_SENSOR_SAIDA":
+                descricao = "Sensor recuperado";
+                holder.txtEvento.setTextColor(Color.parseColor("#3c15eb"));
+                break;
+
+            default:
+                descricao = evento.getDescricao();
+        }
 
         holder.txtEvento.setText(descricao);
-
-        if (descricao.contains("ALERTA")) {
-
-            holder.txtEvento.setTextColor(
-                    Color.parseColor("#fc9403")
-            );
-
-        } else if (descricao.contains("CRITICO_ENTRADA")) {
-
-            holder.txtEvento.setTextColor(
-                    Color.RED
-            );
-
-        } else if (descricao.contains("CRITICO_SAIDA")) {
-
-            holder.txtEvento.setTextColor(
-                    Color.parseColor("#32ad34")
-            );
-
-        } else if (descricao.contains("ERRO_SENSOR")) {
-
-            holder.txtEvento.setTextColor(
-                    Color.parseColor("#2426ab")
-            );
-
-        }
     }
 
     @Override

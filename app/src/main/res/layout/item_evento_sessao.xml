@@ -14,4 +14,10 @@
         android:text="ALERTA_ENTRADA"
         android:textStyle="bold"/>
 
+    <TextView
+        android:id="@+id/txtHorario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"/>
+
 </LinearLayout>

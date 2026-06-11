@@ -20,7 +20,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.google.android.material.appbar.MaterialToolbar;
-
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,7 +68,11 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         );
 
         txtInicio.setText(
-                "Horário: " + horario
+                "Início: 14:31"
+        );
+
+        txtFim.setText(
+                "Fim: 15:42"
         );
 
         txtDuracao.setText(
@@ -79,38 +83,73 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
                 estado
         );
 
+        String estadoTexto;
+
         switch (estado) {
 
             case "FORNO_ATIVO":
+                estadoTexto = "Forno Ativo";
                 txtEstadoFinal.setTextColor(
                         Color.parseColor("#32ad34")
                 );
                 break;
 
             case "FORNO_AQUECENDO":
+                estadoTexto = "Forno Aquecendo";
                 txtEstadoFinal.setTextColor(
                         Color.parseColor("#fc9403")
                 );
                 break;
 
             case "FORNO_ESFRIANDO":
+                estadoTexto = "Forno Esfriando";
                 txtEstadoFinal.setTextColor(
                         Color.parseColor("#2426ab")
                 );
                 break;
 
-            case "FORNO_DESLIGADO":
+            default:
+                estadoTexto = "Forno Desligado";
                 txtEstadoFinal.setTextColor(
                         Color.GRAY
                 );
-                break;
         }
 
+        txtEstadoFinal.setText(estadoTexto);
+
         MaterialToolbar toolbar =
-                findViewById(R.id.toolbar);
+                findViewById(R.id.toolbar); //arruma a toolbar
 
         toolbar.setNavigationOnClickListener(
                 v -> finish()
+        );
+
+        TextView txtTempMax =
+                findViewById(R.id.txtTempMax);
+
+        TextView txtTempMedia =
+                findViewById(R.id.txtTempMedia);
+
+        TextView txtQtdAlertas =
+                findViewById(R.id.txtQtdAlertas);
+
+        TextView txtQtdCriticos =
+                findViewById(R.id.txtQtdCriticos);
+
+        txtTempMax.setText(
+                "Temperatura Máx: 215°C"
+        );
+
+        txtTempMedia.setText(
+                "Temperatura Média: 187°C"
+        );
+
+        txtQtdAlertas.setText(
+                "Alertas: 3"
+        );
+
+        txtQtdCriticos.setText(
+                "Eventos Críticos: 1"
         );
 
         configurarGrafico();
@@ -123,15 +162,24 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         LineChart chart =
                 findViewById(R.id.chartSessao);
 
+        final String[] horarios = {
+                "14:31",
+                "14:40",
+                "14:50",
+                "15:00",
+                "15:10",
+                "15:20"
+        };
+
         ArrayList<Entry> temperaturas =
                 new ArrayList<>();
 
         temperaturas.add(new Entry(0,120));
-        temperaturas.add(new Entry(10,135));
-        temperaturas.add(new Entry(20,150));
-        temperaturas.add(new Entry(30,170));
-        temperaturas.add(new Entry(40,185));
-        temperaturas.add(new Entry(50,190));
+        temperaturas.add(new Entry(1,135));
+        temperaturas.add(new Entry(2,150));
+        temperaturas.add(new Entry(3,170));
+        temperaturas.add(new Entry(4,185));
+        temperaturas.add(new Entry(5,190));
 
         LineDataSet dataSet =
                 new LineDataSet(
@@ -142,6 +190,31 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         dataSet.setDrawValues(false);
 
         chart.getXAxis().setTextColor(Color.WHITE);
+
+        chart.getXAxis().setGranularity(1f);
+
+        chart.getXAxis().setValueFormatter(
+                new ValueFormatter() {
+
+                    @Override
+                    public String getFormattedValue(float value) {
+
+                        int index = (int) value;
+
+                        if(index >= 0 &&
+                                index < horarios.length) {
+
+                            return horarios[index];
+                        }
+
+                        return "";
+                    }
+                }
+        );
+
+        chart.getXAxis().setTextSize(10f);
+
+        chart.getAxisLeft().setTextSize(10f);
 
         chart.getAxisLeft().setTextColor(Color.WHITE);
 
