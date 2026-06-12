@@ -113,6 +113,11 @@ public class TemperaturaFragment extends Fragment {
 
         chart.getDescription().setEnabled(false);
 
+        //grafico limpo
+        chart.getAxisLeft().setDrawGridLines(true);
+
+        chart.getXAxis().setDrawGridLines(false);
+
         chart.invalidate();
     }
 }

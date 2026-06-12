@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.monitorforno.R;
+import com.github.mikephil.charting.components.LimitLine;
 
 public class DetalhesSessaoActivity extends AppCompatActivity {
 
@@ -236,9 +237,40 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
 
         chart.getDescription().setEnabled(false);
 
-        chart.getLegend().setEnabled(false);
+        chart.getLegend().setEnabled(true);
 
         chart.getAxisRight().setEnabled(false);
+
+        LimitLine limiteCritico =
+                new LimitLine(
+                        220f,
+                        "Limite Crítico"
+                );
+
+        limiteCritico.setLineColor(
+                Color.parseColor("#e85f5f")
+        );
+
+        limiteCritico.setLineWidth(2f);
+
+        limiteCritico.setTextColor(
+                Color.parseColor("#e85f5f")
+        );
+
+        chart.getAxisLeft()
+                .addLimitLine(
+                        limiteCritico
+                );
+
+        chart.getAxisLeft().setAxisMinimum(100f);
+
+        chart.getAxisLeft().setAxisMaximum(250f);
+
+        chart.getAxisLeft().setDrawGridLines(true);
+
+        chart.getXAxis().setDrawGridLines(false);
+
+        limiteCritico.setTextSize(12f);
 
         chart.setData(
                 new LineData(dataSet)
