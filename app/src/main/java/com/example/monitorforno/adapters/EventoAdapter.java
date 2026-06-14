@@ -1,9 +1,9 @@
 package com.example.monitorforno.adapters;
 
+import android.widget.TextView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -13,7 +13,8 @@ import com.example.monitorforno.models.Evento;
 
 import java.util.List;
 
-public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.EventoViewHolder> {
+public class EventoAdapter
+        extends RecyclerView.Adapter<EventoAdapter.EventoViewHolder> {
 
     private final List<Evento> eventos;
 
@@ -44,37 +45,76 @@ public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.EventoView
 
         Evento evento = eventos.get(position);
 
-        holder.txtTipoEvento.setText(
-                evento.getDescricao()
-        );
+        String tipo = evento.getDescricao();
+        String descricaoExibicao;
+
+        switch (tipo) {
+
+            case "ALERTA_ENTRADA":
+                descricaoExibicao = "Sistema entrou em alerta";
+                break;
+
+            case "ALERTA_SAIDA":
+                descricaoExibicao = "Sistema normalizado";
+                break;
+
+            case "CRITICO_ENTRADA":
+                descricaoExibicao = "Estado crítico detectado";
+                break;
+
+            case "CRITICO_SAIDA":
+                descricaoExibicao = "Sistema saiu do estado crítico";
+                break;
+
+            case "ERRO_SENSOR_ENTRADA":
+                descricaoExibicao = "Erro de sensor detectado";
+                break;
+
+            case "ERRO_SENSOR_SAIDA":
+                descricaoExibicao = "Sensor normalizado";
+                break;
+
+            default:
+                descricaoExibicao = tipo;
+        }
+
+        holder.txtTipoEvento.setText(descricaoExibicao);
 
         holder.txtHorarioEvento.setText(
                 evento.getHorario()
         );
 
-        String descricao = evento.getDescricao();
-
-        if (descricao.contains("alerta")) {
+        if (tipo.equals("ALERTA_ENTRADA")) {
 
             holder.txtTipoEvento.setTextColor(
                     holder.itemView.getContext()
                             .getColor(R.color.alerta_laranja)
             );
 
-        } else if (descricao.contains("crítico")) {
+        } else if (tipo.equals("CRITICO_ENTRADA")) {
 
             holder.txtTipoEvento.setTextColor(
                     holder.itemView.getContext()
                             .getColor(R.color.alerta_vermelho)
             );
 
-        } else if (descricao.contains("normalizado")) {
+        } else if (
+                tipo.equals("CRITICO_SAIDA") ||
+                        tipo.equals("ALERTA_SAIDA")) {
 
             holder.txtTipoEvento.setTextColor(
                     holder.itemView.getContext()
                             .getColor(R.color.alerta_verde)
             );
 
+        } else if (
+                tipo.equals("ERRO_SENSOR_ENTRADA") ||
+                        tipo.equals("ERRO_SENSOR_SAIDA")) {
+
+            holder.txtTipoEvento.setTextColor(
+                    holder.itemView.getContext()
+                            .getColor(android.R.color.darker_gray)
+            );
         }
     }
 
@@ -83,7 +123,8 @@ public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.EventoView
         return eventos.size();
     }
 
-    static class EventoViewHolder extends RecyclerView.ViewHolder {
+    static class EventoViewHolder
+            extends RecyclerView.ViewHolder {
 
         TextView txtTipoEvento;
         TextView txtHorarioEvento;
