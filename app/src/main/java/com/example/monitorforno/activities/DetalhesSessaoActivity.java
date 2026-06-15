@@ -8,6 +8,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.graphics.Color;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -118,10 +119,10 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
 
         txtEstadoFinal.setText(estadoTexto);
 
-        MaterialToolbar toolbar =
-                findViewById(R.id.toolbar); //arruma a toolbar
+        ImageView btnVoltar =
+                findViewById(R.id.btnVoltar);
 
-        toolbar.setNavigationOnClickListener(
+        btnVoltar.setOnClickListener(
                 v -> finish()
         );
 

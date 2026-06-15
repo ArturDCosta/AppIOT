@@ -84,14 +84,14 @@ public class EventoAdapter
                 evento.getHorario()
         );
 
-        if (tipo.equals("ALERTA_ENTRADA")) {
+        if (descricaoExibicao.equals("Sistema entrou em alerta")) {
 
             holder.txtTipoEvento.setTextColor(
                     holder.itemView.getContext()
                             .getColor(R.color.alerta_laranja)
             );
 
-        } else if (tipo.equals("CRITICO_ENTRADA")) {
+        } else if (descricaoExibicao.equals("Estado crítico detectado") || descricaoExibicao.equals("Estado crítico")) {
 
             holder.txtTipoEvento.setTextColor(
                     holder.itemView.getContext()
@@ -99,8 +99,8 @@ public class EventoAdapter
             );
 
         } else if (
-                tipo.equals("CRITICO_SAIDA") ||
-                        tipo.equals("ALERTA_SAIDA")) {
+                descricaoExibicao.equals("Sistema saiu do estado crítico") ||
+                        descricaoExibicao.equals("Sistema normalizado")) {
 
             holder.txtTipoEvento.setTextColor(
                     holder.itemView.getContext()
@@ -108,8 +108,8 @@ public class EventoAdapter
             );
 
         } else if (
-                tipo.equals("ERRO_SENSOR_ENTRADA") ||
-                        tipo.equals("ERRO_SENSOR_SAIDA")) {
+                descricaoExibicao.equals("Erro de sensor detectado") ||
+                        descricaoExibicao.equals("Sensor normalizado")) {
 
             holder.txtTipoEvento.setTextColor(
                     holder.itemView.getContext()
