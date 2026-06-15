@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
@@ -39,6 +40,42 @@ public class DashboardFragment extends Fragment {
                 container,
                 false
         );
+
+        TextView txtSistemaAtual =
+                view.findViewById(R.id.txtSistema);
+
+        String estadoSistema = "CRITICO";
+
+        txtSistemaAtual.setText(estadoSistema);
+
+        switch (estadoSistema) {
+
+            case "SEGURO":
+
+                txtSistemaAtual.setTextColor(
+                        getResources().getColor(R.color.alerta_verde)
+                );
+                break;
+
+            case "ALERTA":
+
+                txtSistemaAtual.setTextColor(
+                        getResources().getColor(R.color.alerta_laranja)
+                );
+                break;
+
+            case "CRITICO":
+
+                txtSistemaAtual.setTextColor(
+                        getResources().getColor(R.color.alerta_vermelho)
+                );
+                break;
+
+            case "ERRO_SENSOR":
+
+                txtSistemaAtual.setTextColor(Color.GRAY);
+                break;
+        }
 
         MaterialCardView cardEstadoForno =
                 view.findViewById(R.id.cardEstadoForno);

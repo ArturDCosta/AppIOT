@@ -20,5 +20,9 @@
 
         <item name="colorSurface">@color/card_dark</item>
 
+        <item name="colorSecondaryContainer">@color/primary_green</item>
+
+        <item name="colorSurfaceContainer">@color/primary_green</item>
+
     </style>
 </resources>
