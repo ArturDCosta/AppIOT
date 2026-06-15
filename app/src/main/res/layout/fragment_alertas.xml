@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
+    android:background="@color/background_dark"
     android:padding="16dp">
 
     <TextView
@@ -12,6 +13,7 @@
         android:layout_height="wrap_content"
         android:text="Alertas do Sistema"
         android:textSize="24sp"
+        android:textColor="@color/white"
         android:textStyle="bold"/>
 
     <com.google.android.material.card.MaterialCardView
@@ -24,6 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:background="@color/card_dark"
             android:padding="16dp">
 
             <TextView
@@ -31,24 +34,28 @@
                 android:layout_height="wrap_content"
                 android:text="Resumo"
                 android:textStyle="bold"
+                android:textColor="@color/white"
                 android:textSize="18sp"/>
 
             <TextView
                 android:id="@+id/txtTotalAlertas"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textColor="@color/white"
                 android:text="Total de Alertas: 12"/>
 
             <TextView
                 android:id="@+id/txtTotalCriticos"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textColor="@color/white"
                 android:text="Eventos Críticos: 3"/>
 
             <TextView
                 android:id="@+id/txtUltimoEvento"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textColor="@color/white"
                 android:text="Último Evento: 14:45"/>
 
         </LinearLayout>

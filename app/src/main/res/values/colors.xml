@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="background_dark">#0F1115</color>
+    <color name="card_dark">#1A1D24</color>
+    <color name="primary_green">#3DA93D</color>
+    <color name="primary_green_dark">#2F8530</color>
+    <color name="white">#FFFFFF</color>
     <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
     <color name="forno_aquecendo">#DB8307</color>
     <color name="forno_desligado">#808080</color>
     <color name="forno_ativo">#04711C</color>

@@ -4,12 +4,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
+    android:background="@color/background_dark"
     android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:background="@color/background_dark"
         android:padding="16dp">
 
         <TextView
@@ -17,6 +19,7 @@
             android:layout_height="wrap_content"
             android:text="Temporizadores"
             android:textSize="24sp"
+            android:textColor="@color/white"
             android:textStyle="bold"/>
 
         <com.google.android.material.card.MaterialCardView
@@ -30,11 +33,13 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="vertical"
+                android:background="@color/card_dark"
                 android:padding="24dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Próximo Temporizador"/>
 
                 <TextView
@@ -43,12 +48,14 @@
                     android:layout_height="wrap_content"
                     android:text="Nenhum"
                     android:textSize="42sp"
+                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
                 <TextView
                     android:id="@+id/txtTempoRestante"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Sem agendamentos"/>
 
             </LinearLayout>
@@ -60,6 +67,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            app:backgroundTint="@color/primary_green_dark"
+            android:textColor="@color/white"
             android:text="Selecionar Horário"/>
 
         <TextView
@@ -67,6 +76,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            android:textColor="@color/white"
             android:text="Nenhum horário selecionado"/>
 
         <com.google.android.material.button.MaterialButton
@@ -74,6 +84,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            app:backgroundTint="@color/primary_green_dark"
+            android:textColor="@color/white"
             android:text="Criar Temporizador"/>
 
         <TextView
@@ -82,12 +94,14 @@
             android:layout_marginTop="20dp"
             android:text="Temporizadores Agendados"
             android:textSize="18sp"
+            android:textColor="@color/white"
             android:textStyle="bold"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerTemporizadores"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/background_dark"
             android:layout_marginTop="12dp"/>
 
     </LinearLayout>

@@ -4,12 +4,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
+    android:background="@color/background_dark"
     android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:background="@color/background_dark"
         android:padding="16dp">
 
         <TextView
@@ -17,6 +19,7 @@
             android:layout_height="wrap_content"
             android:text="Perfil"
             android:textSize="24sp"
+            android:textColor="@color/white"
             android:textStyle="bold"/>
 
         <com.google.android.material.card.MaterialCardView
@@ -30,6 +33,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="vertical"
+                android:background="@color/background_dark"
                 android:padding="24dp">
 
                 <ImageView
@@ -44,12 +48,14 @@
                     android:layout_marginTop="12dp"
                     android:text="Rafael"
                     android:textSize="22sp"
+                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
                 <TextView
                     android:id="@+id/txtEmailPerfil"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="rafa@gmail.com"/>
 
             </LinearLayout>
@@ -66,18 +72,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:background="@color/background_dark"
                 android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Nome"
+                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
                 <TextView
                     android:id="@+id/txtNome"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Rafael"/>
 
                 <TextView
@@ -85,12 +94,14 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Email"
+                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
                 <TextView
                     android:id="@+id/txtEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="rafa@gmail.com"/>
 
                 <TextView
@@ -98,12 +109,14 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Data de Nascimento"
+                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
                 <TextView
                     android:id="@+id/txtNascimento"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="13/02/2009"/>
 
             </LinearLayout>
@@ -115,6 +128,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            app:backgroundTint="@color/primary_green_dark"
+            android:textColor="@color/white"
             android:text="Alterar Senha"/>
 
         <com.google.android.material.button.MaterialButton
@@ -122,6 +137,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            app:backgroundTint="@color/alerta_vermelho"
+            android:textColor="@color/white"
             android:text="Sair da Conta"/>
 
     </LinearLayout>

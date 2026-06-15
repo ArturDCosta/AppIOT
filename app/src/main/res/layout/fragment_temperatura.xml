@@ -4,12 +4,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
+    android:background="@color/background_dark"
     android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:background="@color/background_dark"
         android:padding="16dp">
 
         <LinearLayout
@@ -31,6 +33,7 @@
                 android:layout_marginStart="8dp"
                 android:text="Temperatura"
                 android:textSize="28sp"
+                android:textColor="@color/white"
                 android:textStyle="bold"/>
 
         </LinearLayout>
@@ -46,11 +49,13 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="vertical"
+                android:background="@color/card_dark"
                 android:padding="24dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Temperatura Atual"/>
 
                 <TextView
@@ -59,6 +64,7 @@
                     android:layout_height="wrap_content"
                     android:text="185°C"
                     android:textSize="42sp"
+                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
             </LinearLayout>
@@ -75,12 +81,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="16dp"
+                android:background="@color/card_dark"
                 android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Histórico de Temperatura"
+                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
                 <com.github.mikephil.charting.charts.LineChart
@@ -108,11 +116,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:background="@color/card_dark"
                     android:padding="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:textColor="@color/white"
                         android:text="Última Temp."/>
 
                     <TextView
@@ -121,6 +131,7 @@
                         android:layout_height="wrap_content"
                         android:text="184°C"
                         android:textSize="22sp"
+                        android:textColor="@color/white"
                         android:textStyle="bold"/>
 
                 </LinearLayout>
@@ -138,11 +149,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:background="@color/card_dark"
                     android:padding="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:textColor="@color/white"
                         android:text="Estado"/>
 
                     <TextView
@@ -151,6 +164,7 @@
                         android:layout_height="wrap_content"
                         android:text="AQUECENDO"
                         android:textSize="22sp"
+                        android:textColor="@color/white"
                         android:textStyle="bold"/>
 
                 </LinearLayout>
@@ -169,11 +183,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:background="@color/card_dark"
                 android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Estado do Sistema"/>
 
                 <TextView
@@ -182,6 +198,7 @@
                     android:layout_height="wrap_content"
                     android:text="SEGURO"
                     android:textSize="22sp"
+                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
             </LinearLayout>
@@ -198,11 +215,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:background="@color/card_dark"
                 android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Última Leitura"/>
 
                 <TextView
@@ -211,6 +230,7 @@
                     android:layout_height="wrap_content"
                     android:text="19:44:32"
                     android:textSize="22sp"
+                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
             </LinearLayout>

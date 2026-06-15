@@ -4,12 +4,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
+    android:background="@color/background_dark"
     android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:background="@color/background_dark"
         android:padding="16dp">
 
         <com.google.android.material.appbar.MaterialToolbar
@@ -17,6 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_voltar"
+            app:titleTextColor="@color/white"
             app:title="Detalhes da Sessão"/>
 
         <TextView
@@ -25,6 +28,7 @@
             android:layout_height="wrap_content"
             android:text="Sessão 09/06/2026"
             android:textSize="24sp"
+            android:textColor="@color/white"
             android:textStyle="bold"/>
 
         <com.google.android.material.card.MaterialCardView
@@ -37,24 +41,28 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:background="@color/card_dark"
                 android:padding="16dp">
 
                 <TextView
                     android:id="@+id/txtInicio"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Início: 14:31"/>
 
                 <TextView
                     android:id="@+id/txtFim"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Fim: 15:42"/>
 
                 <TextView
                     android:id="@+id/txtDuracao"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Duração: 1h11m"/>
 
                 <TextView
@@ -80,6 +88,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:background="@color/card_dark"
                 android:padding="16dp">
 
                 <TextView
@@ -87,30 +96,35 @@
                     android:layout_height="wrap_content"
                     android:text="Estatísticas da Sessão"
                     android:textStyle="bold"
+                    android:textColor="@color/white"
                     android:textSize="18sp"/>
 
                 <TextView
                     android:id="@+id/txtTempMax"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Temperatura Máx: 215°C"/>
 
                 <TextView
                     android:id="@+id/txtTempMedia"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Temperatura Média: 187°C"/>
 
                 <TextView
                     android:id="@+id/txtQtdAlertas"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Alertas: 3"/>
 
                 <TextView
                     android:id="@+id/txtQtdCriticos"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/white"
                     android:text="Eventos Críticos: 1"/>
 
             </LinearLayout>
@@ -123,11 +137,13 @@
             android:layout_marginTop="20dp"
             android:text="Gráfico de Temperatura"
             android:textSize="18sp"
+            android:textColor="@color/white"
             android:textStyle="bold"/>
 
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chartSessao"
             android:layout_width="match_parent"
+            android:background="@color/background_dark"
             android:layout_height="250dp"/>
 
         <TextView
@@ -136,6 +152,7 @@
             android:layout_marginTop="20dp"
             android:text="Eventos"
             android:textSize="18sp"
+            android:textColor="@color/white"
             android:textStyle="bold"/>
 
         <androidx.recyclerview.widget.RecyclerView
