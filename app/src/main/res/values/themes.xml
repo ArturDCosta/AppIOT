@@ -8,7 +8,7 @@
     <style name="Theme.MonitorForno"
         parent="Theme.Material3.DayNight.NoActionBar">
 
-        <item name="colorPrimary">@color/primary_green</item>
+        <item name="colorPrimary"> @color/primary_green</item>
 
         <item name="colorSecondary">@color/primary_green</item>
 
@@ -23,6 +23,6 @@
         <item name="colorSecondaryContainer">@color/primary_green</item>
 
         <item name="colorSurfaceContainer">@color/primary_green</item>
-
+b    b,5
     </style>
 </resources>
