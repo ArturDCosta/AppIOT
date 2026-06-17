@@ -8,6 +8,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.graphics.Color;
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -17,18 +18,22 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.monitorforno.adapters.EventoSessaoAdapter;
 import com.example.monitorforno.models.EventoSessao;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.google.android.material.appbar.MaterialToolbar;
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.example.monitorforno.R;
 import com.github.mikephil.charting.components.LimitLine;
 
 public class DetalhesSessaoActivity extends AppCompatActivity {
+
+    private LineChart chart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +57,8 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
 
         TextView txtEstadoFinal =
                 findViewById(R.id.txtEstadoFinal);
+
+        chart = findViewById(R.id.chartSessao);
 
         String data =
                 getIntent().getStringExtra("dataSessao");
@@ -85,39 +92,27 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
                 estado
         );
 
-        String estadoTexto;
-
         switch (estado) {
 
             case "FORNO_ATIVO":
-                estadoTexto = "Forno Ativo\n";
-                txtEstadoFinal.setTextColor(
-                        Color.parseColor("#32ad34")
-                );
+                txtEstadoFinal.setText("Forno Ativo\n");
+                txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_ativo));
                 break;
 
             case "FORNO_AQUECENDO":
-                estadoTexto = "Forno Aquecendo";
-                txtEstadoFinal.setTextColor(
-                        Color.parseColor("#fc9403")
-                );
+                txtEstadoFinal.setText("Forno Aquecendo");
+                txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_aquecendo));
                 break;
 
             case "FORNO_ESFRIANDO":
-                estadoTexto = "Forno Esfriando";
-                txtEstadoFinal.setTextColor(
-                        Color.parseColor("#2426ab")
-                );
+                txtEstadoFinal.setText("Forno Esfriando");
+                txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_esfriando));
                 break;
 
             default:
-                estadoTexto = "Forno Desligado";
-                txtEstadoFinal.setTextColor(
-                        Color.GRAY
-                );
+                txtEstadoFinal.setText("Forno Desligado");
+                txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_desligado));
         }
-
-        txtEstadoFinal.setText(estadoTexto);
 
         ImageView btnVoltar =
                 findViewById(R.id.btnVoltar);
@@ -154,129 +149,90 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
                 "Críticos: 1"
         );
 
-        configurarGrafico();
+        List<Float> temperaturasMock = Arrays.asList(
+                120f, 135f, 150f, 170f, 185f, 190f
+        );
+        List<String> horariosMock = Arrays.asList(
+                "14:31", "14:40", "14:50", "15:00", "15:10", "15:20"
+        );
+        atualizarGrafico(temperaturasMock, horariosMock);
 
         configurarEventos();
     }
 
-    private void configurarGrafico() {
+    // Método público — chamado quando a API responder
+    public void atualizarGrafico(List<Float> valores, List<String> horarios) {
 
-        LineChart chart =
-                findViewById(R.id.chartSessao);
+        if (valores == null || horarios == null) {
+            Log.e("Grafico", "Dados nulos recebidos da API");
+            return;
+        }
 
-        final String[] horarios = {
-                "14:31",
-                "14:40",
-                "14:50",
-                "15:00",
-                "15:10",
-                "15:20"
-        };
+        if (valores.size() != horarios.size()) {
+            Log.e("Grafico", "Desalinhamento: "
+                    + valores.size() + " valores / "
+                    + horarios.size() + " horários");
+            return;
+        }
 
-        ArrayList<Entry> temperaturas =
-                new ArrayList<>();
+        if (valores.isEmpty()) {
+            Log.w("Grafico", "Sessão sem dados de temperatura");
+            chart.clear();
+            chart.invalidate();
+            return;
+        }
 
-        temperaturas.add(new Entry(0,120));
-        temperaturas.add(new Entry(1,135));
-        temperaturas.add(new Entry(2,150));
-        temperaturas.add(new Entry(3,170));
-        temperaturas.add(new Entry(4,185));
-        temperaturas.add(new Entry(5,190));
+        configurarGrafico(valores, horarios);
+    }
 
-        LineDataSet dataSet =
-                new LineDataSet(
-                        temperaturas,
-                        "Temperatura (C°)"
-                );
+    // Método privado — só monta o gráfico, não busca dados
+    private void configurarGrafico(List<Float> valores, List<String> horarios) {
 
+        ArrayList<Entry> entries = new ArrayList<>();
+
+        for (int i = 0; i < valores.size(); i++) {
+            entries.add(new Entry(i, valores.get(i)));
+        }
+
+        LineDataSet dataSet = new LineDataSet(entries, "Temperatura (C°)");
+        dataSet.setLineWidth(3f);
+        dataSet.setCircleRadius(4f);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
         dataSet.setDrawValues(false);
+        dataSet.setColor(Color.parseColor("#fc9403"));
+        dataSet.setCircleColor(Color.parseColor("#fc9403"));
 
-        chart.getXAxis().setTextColor(Color.WHITE);
-
-        chart.getXAxis().setGranularity(1f);
-
-        chart.getXAxis().setValueFormatter(
-                new ValueFormatter() {
-
-                    @Override
-                    public String getFormattedValue(float value) {
-
-                        int index = (int) value;
-
-                        if(index >= 0 &&
-                                index < horarios.length) {
-
-                            return horarios[index];
-                        }
-
-                        return "";
-                    }
-                }
-        );
-
-        chart.getXAxis().setTextSize(10f);
-
-        chart.getAxisLeft().setTextSize(10f);
+        XAxis eixoX = chart.getXAxis();
+        eixoX.setPosition(XAxis.XAxisPosition.BOTTOM);
+        eixoX.setGranularity(1f);
+        eixoX.setLabelCount(horarios.size(), true);
+        eixoX.setValueFormatter(new IndexAxisValueFormatter(horarios));
+        eixoX.setTextColor(Color.WHITE);
+        eixoX.setTextSize(10f);
+        eixoX.setDrawGridLines(false);
 
         chart.getAxisLeft().setTextColor(Color.WHITE);
-
-        chart.getLegend().setTextColor(Color.WHITE);
-
-        dataSet.setLineWidth(3f);
-
-        dataSet.setMode(
-                LineDataSet.Mode.CUBIC_BEZIER
-        );
-
-        dataSet.setColor(
-                Color.parseColor("#fc9403")
-        );
-
-        dataSet.setCircleColor(
-                Color.parseColor("#fc9403")
-        );
-
-        chart.getDescription().setEnabled(false);
-
-        chart.getLegend().setEnabled(true);
-
-        chart.getAxisRight().setEnabled(false);
-
-        LimitLine limiteCritico =
-                new LimitLine(
-                        220f,
-                        "Limite Crítico"
-                );
-
-        limiteCritico.setLineColor(
-                Color.parseColor("#e85f5f")
-        );
-
-        limiteCritico.setLineWidth(2f);
-
-        limiteCritico.setTextColor(
-                Color.parseColor("#e85f5f")
-        );
-
-        chart.getAxisLeft()
-                .addLimitLine(
-                        limiteCritico
-                );
-
+        chart.getAxisLeft().setTextSize(10f);
+        chart.getAxisLeft().setDrawGridLines(true);
         chart.getAxisLeft().setAxisMinimum(100f);
-
         chart.getAxisLeft().setAxisMaximum(250f);
 
-        chart.getAxisLeft().setDrawGridLines(true);
+        // Limpa limites anteriores antes de adicionar
+        chart.getAxisLeft().removeAllLimitLines();
 
-        chart.getXAxis().setDrawGridLines(false);
-
+        LimitLine limiteCritico = new LimitLine(220f, "Limite Crítico");
+        limiteCritico.setLineColor(Color.parseColor("#e85f5f"));
+        limiteCritico.setLineWidth(2f);
+        limiteCritico.setTextColor(Color.parseColor("#e85f5f"));
         limiteCritico.setTextSize(12f);
+        chart.getAxisLeft().addLimitLine(limiteCritico);
 
-        chart.setData(
-                new LineData(dataSet)
-        );
+        chart.getAxisRight().setEnabled(false);
+        chart.getLegend().setTextColor(Color.WHITE);
+        chart.getLegend().setEnabled(true);
+        chart.getDescription().setEnabled(false);
 
+        chart.setData(new LineData(dataSet));
         chart.invalidate();
     }
 

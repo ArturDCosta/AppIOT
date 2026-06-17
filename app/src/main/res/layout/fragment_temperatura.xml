@@ -162,9 +162,7 @@
                         android:id="@+id/txtEstadoForno"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="AQUECENDO"
                         android:textSize="22sp"
-                        android:textColor="@color/white"
                         android:textStyle="bold"/>
 
                 </LinearLayout>
@@ -196,9 +194,7 @@
                     android:id="@+id/txtEstadoSistema"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="SEGURO"
                     android:textSize="22sp"
-                    android:textColor="@color/white"
                     android:textStyle="bold"/>
 
             </LinearLayout>
