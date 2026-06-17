@@ -181,8 +181,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:id="@+id/txtEstadoFinal"
-                        android:text="ATIVO"
-                        android:textColor="@color/forno_ativo"
                         android:textStyle="bold"
                         android:textSize="22sp"/>
 
@@ -217,29 +215,25 @@
                     android:id="@+id/txtTempMax"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:text="Temperatura Máx: 215°C"/>
+                    android:textColor="@color/white"/>
 
                 <TextView
                     android:id="@+id/txtTempMedia"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:text="Temperatura Média: 187°C"/>
+                    android:textColor="@color/white"/>
 
                 <TextView
                     android:id="@+id/txtQtdAlertas"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:text="Alertas: 3"/>
+                    android:textColor="@color/white"/>
 
                 <TextView
                     android:id="@+id/txtQtdCriticos"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:text="Eventos Críticos: 1"/>
+                    android:textColor="@color/white"/>
 
             </LinearLayout>
 

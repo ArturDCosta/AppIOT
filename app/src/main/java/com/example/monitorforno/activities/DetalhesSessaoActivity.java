@@ -90,7 +90,7 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         switch (estado) {
 
             case "FORNO_ATIVO":
-                estadoTexto = "Forno Ativo";
+                estadoTexto = "Forno Ativo\n";
                 txtEstadoFinal.setTextColor(
                         Color.parseColor("#32ad34")
                 );
@@ -139,11 +139,11 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
                 findViewById(R.id.txtQtdCriticos);
 
         txtTempMax.setText(
-                "Temperatura Máx: 215°C"
+                "Máx: 215°C"
         );
 
         txtTempMedia.setText(
-                "Temperatura Média: 187°C"
+                "Média: 187°C"
         );
 
         txtQtdAlertas.setText(
@@ -151,7 +151,7 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         );
 
         txtQtdCriticos.setText(
-                "Eventos Críticos: 1"
+                "Críticos: 1"
         );
 
         configurarGrafico();
