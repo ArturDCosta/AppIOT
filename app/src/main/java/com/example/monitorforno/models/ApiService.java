@@ -7,8 +7,8 @@ import java.util.List;
 public interface ApiService {
 
     // AUTH
-    //@POST("v1/auth/login")
-    //Call<LoginResponseDTO> login(@Body LoginRequestDTO dto);
+    @POST("v1/auth/login")
+    Call<LoginResponseDTO> login(@Body LoginRequestDTO dto);
 
     // SESSÕES
     @GET("v1/sessoes/minhas")

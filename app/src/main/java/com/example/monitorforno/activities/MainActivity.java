@@ -1,5 +1,6 @@
 package com.example.monitorforno.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,6 +12,7 @@ import com.example.monitorforno.fragments.DashboardFragment;
 import com.example.monitorforno.fragments.HistoricoFragment;
 import com.example.monitorforno.fragments.PerfilFragment;
 import com.example.monitorforno.fragments.TemporizadoresFragment;
+import com.example.monitorforno.utils.SessionManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
@@ -20,6 +22,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        SessionManager sessionManager = new SessionManager(this);
+
+        if (!sessionManager.estaLogado()) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottomNavigation);
