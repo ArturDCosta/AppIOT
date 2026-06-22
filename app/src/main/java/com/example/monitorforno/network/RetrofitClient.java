@@ -10,7 +10,7 @@ public class RetrofitClient {
 
     // Emulador Android → 10.0.2.2 aponta para localhost do seu PC
     // Celular físico → use o IP da sua máquina na rede local (ex: 192.168.1.x)
-    private static final String BASE_URL = "http://10.0.2.2:8080/";
+    private static final String BASE_URL = "http://192.168.0.124:8080/";
 
     private static Retrofit instance;
 
