@@ -91,7 +91,7 @@ public class LoginActivity extends AppCompatActivity {
 
         LoginRequestDTO dto = new LoginRequestDTO(email, senha);
 
-        RetrofitClient.getApiService()
+        RetrofitClient.getApiService(this)
                 .login(dto)
                 .enqueue(new Callback<LoginResponseDTO>() {
 

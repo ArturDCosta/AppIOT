@@ -1,195 +1,166 @@
 package com.example.monitorforno.activities;
 
 import android.os.Bundle;
-
-import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import android.graphics.Color;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.monitorforno.adapters.EventoSessaoAdapter;
+import com.example.monitorforno.models.ApiService;
 import com.example.monitorforno.models.EventoSessao;
+import com.example.monitorforno.models.SessaoDetalhesDTO;
+import com.example.monitorforno.network.RetrofitClient;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
-import com.github.mikephil.charting.formatter.ValueFormatter;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.example.monitorforno.R;
 import com.github.mikephil.charting.components.LimitLine;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class DetalhesSessaoActivity extends AppCompatActivity {
 
     private LineChart chart;
 
+    // Declaração das Views para atualizar dinamicamente após a resposta da API
+    private TextView txtTituloSessao, txtInicio, txtFim, txtDuracao, txtEstadoFinal;
+    private TextView txtTempMax, txtTempMedia, txtQtdAlertas, txtQtdCriticos;
+    private RecyclerView recyclerView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_detalhes_sessao);
 
-        setContentView(
-                R.layout.activity_detalhes_sessao
-        );
-
-        TextView txtTituloSessao =
-                findViewById(R.id.txtTituloSessao);
-
-        TextView txtInicio =
-                findViewById(R.id.txtInicio);
-
-        TextView txtFim =
-                findViewById(R.id.txtFim);
-
-        TextView txtDuracao =
-                findViewById(R.id.txtDuracao);
-
-        TextView txtEstadoFinal =
-                findViewById(R.id.txtEstadoFinal);
-
+        // 1. Inicialização dos componentes de interface
+        txtTituloSessao = findViewById(R.id.txtTituloSessao);
+        txtInicio = findViewById(R.id.txtInicio);
+        txtFim = findViewById(R.id.txtFim);
+        txtDuracao = findViewById(R.id.txtDuracao);
+        txtEstadoFinal = findViewById(R.id.txtEstadoFinal);
+        txtTempMax = findViewById(R.id.txtTempMax);
+        txtTempMedia = findViewById(R.id.txtTempMedia);
+        txtQtdAlertas = findViewById(R.id.txtQtdAlertas);
+        txtQtdCriticos = findViewById(R.id.txtQtdCriticos);
         chart = findViewById(R.id.chartSessao);
+        recyclerView = findViewById(R.id.recyclerEventosSessao);
 
-        String data =
-                getIntent().getStringExtra("dataSessao");
+        ImageView btnVoltar = findViewById(R.id.btnVoltar);
+        btnVoltar.setOnClickListener(v -> finish());
 
-        String horario =
-                getIntent().getStringExtra("horarioSessao");
+        // 2. Resgata o ID da sessão enviado pela tela anterior
+        String sessaoId = getIntent().getStringExtra("SESSAO_ID");
 
-        String duracao =
-                getIntent().getStringExtra("duracaoSessao");
+        if (sessaoId != null) {
+            buscarDadosDaSessao(sessaoId);
+        } else {
+            Toast.makeText(this, "Erro: ID da sessão não recebido.", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
 
-        String estado =
-                getIntent().getStringExtra("estadoSessao");
+    private void buscarDadosDaSessao(String id) {
+        // O RetrofitClient injeta o token automaticamente via Interceptor por trás dos panos
+        ApiService apiService = RetrofitClient.getApiService(this);
 
-        txtTituloSessao.setText(
-                "Sessão " + data
-        );
+        apiService.getSessaoPorId(id).enqueue(new Callback<SessaoDetalhesDTO>() {
+            @Override
+            public void onResponse(@NonNull Call<SessaoDetalhesDTO> call, @NonNull Response<SessaoDetalhesDTO> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    SessaoDetalhesDTO sessao = response.body();
+                    atualizarInterfaceGrafica(sessao);
+                } else {
+                    Toast.makeText(DetalhesSessaoActivity.this, "Erro ao carregar sessão: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
 
-        txtInicio.setText(
-                "Início: 14:31"
-        );
+            @Override
+            public void onFailure(@NonNull Call<SessaoDetalhesDTO> call, @NonNull Throwable t) {
+                Toast.makeText(DetalhesSessaoActivity.this, "Falha de conexão: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
-        txtFim.setText(
-                "Fim: 15:42"
-        );
+    private void atualizarInterfaceGrafica(SessaoDetalhesDTO sessao) {
+        // 1. Preenche textos principais da sessão
+        txtTituloSessao.setText("Sessão " + (sessao.getData() != null ? sessao.getData() : ""));
+        txtInicio.setText("Início: " + (sessao.getHorarioInicio() != null ? sessao.getHorarioInicio() : "--:--"));
+        txtFim.setText("Fim: " + (sessao.getHorarioFim() != null ? sessao.getHorarioFim() : "--:--"));
+        txtDuracao.setText("Duração: " + (sessao.getDuracao() != null ? sessao.getDuracao() : "0m"));
 
-        txtDuracao.setText(
-                "Duração: " + duracao
-        );
+        // 2. Preenche métricas e telemetrias coletadas
+        txtTempMax.setText("Máx: " + sessao.getTemperaturaMaxima() + "°C");
+        txtTempMedia.setText("Média: " + sessao.getTemperaturaMedia() + "°C");
+        txtQtdAlertas.setText("Alertas: " + sessao.getQuantidadeAlertas());
+        txtQtdCriticos.setText("Críticos: " + sessao.getQuantidadeCriticos());
 
-        txtEstadoFinal.setText(
-                estado
-        );
-
+        // 3. Altera as cores baseadas no estado da sessão (reaproveitando sua lógica original)
+        String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal() : "FORNO_DESLIGADO";
         switch (estado) {
-
             case "FORNO_ATIVO":
-                txtEstadoFinal.setText("Forno Ativo\n");
+                txtEstadoFinal.setText("Forno Ativo");
                 txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_ativo));
                 break;
-
             case "FORNO_AQUECENDO":
                 txtEstadoFinal.setText("Forno Aquecendo");
                 txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_aquecendo));
                 break;
-
             case "FORNO_ESFRIANDO":
                 txtEstadoFinal.setText("Forno Esfriando");
                 txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_esfriando));
                 break;
-
             default:
                 txtEstadoFinal.setText("Forno Desligado");
                 txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_desligado));
+                break;
         }
 
-        ImageView btnVoltar =
-                findViewById(R.id.btnVoltar);
+        // 4. Atualiza o gráfico com as listas de telemetria vindas da API
+        // Certifique-se de que o seu SessaoDetalhesDTO possua esses métodos retornando List<Float> e List<String>
+        atualizarGrafico(sessao.getTemperaturasLista(), sessao.getHorariosLista());
 
-        btnVoltar.setOnClickListener(
-                v -> finish()
-        );
-
-        TextView txtTempMax =
-                findViewById(R.id.txtTempMax);
-
-        TextView txtTempMedia =
-                findViewById(R.id.txtTempMedia);
-
-        TextView txtQtdAlertas =
-                findViewById(R.id.txtQtdAlertas);
-
-        TextView txtQtdCriticos =
-                findViewById(R.id.txtQtdCriticos);
-
-        txtTempMax.setText(
-                "Máx: 215°C"
-        );
-
-        txtTempMedia.setText(
-                "Média: 187°C"
-        );
-
-        txtQtdAlertas.setText(
-                "Alertas: 3"
-        );
-
-        txtQtdCriticos.setText(
-                "Críticos: 1"
-        );
-
-        List<Float> temperaturasMock = Arrays.asList(
-                120f, 135f, 150f, 170f, 185f, 190f
-        );
-        List<String> horariosMock = Arrays.asList(
-                "14:31", "14:40", "14:50", "15:00", "15:10", "15:20"
-        );
-        atualizarGrafico(temperaturasMock, horariosMock);
-
-        configurarEventos();
+        // 5. Configura a lista de eventos/alertas ocorridos nessa sessão específica
+        if (sessao.getEventos() != null) {
+            configurarEventos(sessao.getEventos());
+        }
     }
 
-    // Método público — chamado quando a API responder
     public void atualizarGrafico(List<Float> valores, List<String> horarios) {
-
         if (valores == null || horarios == null) {
             Log.e("Grafico", "Dados nulos recebidos da API");
             return;
         }
-
         if (valores.size() != horarios.size()) {
-            Log.e("Grafico", "Desalinhamento: "
-                    + valores.size() + " valores / "
-                    + horarios.size() + " horários");
+            Log.e("Grafico", "Desalinhamento: " + valores.size() + " valores / " + horarios.size() + " horários");
             return;
         }
-
         if (valores.isEmpty()) {
             Log.w("Grafico", "Sessão sem dados de temperatura");
             chart.clear();
             chart.invalidate();
             return;
         }
-
         configurarGrafico(valores, horarios);
     }
 
-    // Método privado — só monta o gráfico, não busca dados
     private void configurarGrafico(List<Float> valores, List<String> horarios) {
-
         ArrayList<Entry> entries = new ArrayList<>();
-
         for (int i = 0; i < valores.size(); i++) {
             entries.add(new Entry(i, valores.get(i)));
         }
@@ -217,9 +188,7 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         chart.getAxisLeft().setAxisMinimum(100f);
         chart.getAxisLeft().setAxisMaximum(250f);
 
-        // Limpa limites anteriores antes de adicionar
         chart.getAxisLeft().removeAllLimitLines();
-
         LimitLine limiteCritico = new LimitLine(220f, "Limite Crítico");
         limiteCritico.setLineColor(Color.parseColor("#e85f5f"));
         limiteCritico.setLineWidth(2f);
@@ -236,41 +205,10 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         chart.invalidate();
     }
 
-    private void configurarEventos() {
-
-        RecyclerView recyclerView =
-                findViewById(
-                        R.id.recyclerEventosSessao
-                );
-
-        recyclerView.setLayoutManager(
-                new LinearLayoutManager(this)
-        );
-
-        List<EventoSessao> eventos =
-                new ArrayList<>();
-
-        eventos.add(
-                new EventoSessao(
-                        "ALERTA_ENTRADA"
-                )
-        );
-
-        eventos.add(
-                new EventoSessao(
-                        "CRITICO_ENTRADA"
-                )
-        );
-
-        eventos.add(
-                new EventoSessao(
-                        "CRITICO_SAIDA"
-                )
-        );
-
-        EventoSessaoAdapter adapter =
-                new EventoSessaoAdapter(eventos);
-
+    private void configurarEventos(List<EventoSessao> listaDeEventosDaApi) {
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // Alimenta o adapter diretamente com os eventos retornados pela sua API
+        EventoSessaoAdapter adapter = new EventoSessaoAdapter(listaDeEventosDaApi);
         recyclerView.setAdapter(adapter);
     }
 }

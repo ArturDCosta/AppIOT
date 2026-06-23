@@ -26,6 +26,12 @@ public class SessionManager {
     public String getTokenFormatado() {
         String token = prefs.getString(KEY_TOKEN, null);
         if (token == null) return null;
+
+        // Se a API já devolveu com "Bearer ", apenas retorna.
+        // Se não, adiciona a palavra e o espaço.
+        if (token.startsWith("Bearer ")) {
+            return token;
+        }
         return "Bearer " + token;
     }
 

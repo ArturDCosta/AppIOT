@@ -6,47 +6,48 @@ import java.util.List;
 
 public interface ApiService {
 
+    // ==========================================
     // AUTH
+    // ==========================================
     @POST("v1/auth/login")
     Call<LoginResponseDTO> login(@Body LoginRequestDTO dto);
 
+
+    // ==========================================
     // SESSÕES
+    // ==========================================
     @GET("v1/sessoes/minhas")
-    Call<List<SessaoDetalhesDTO>> minhasSessoes(
-            @Header("Authorization") String token
-    );
+    Call<List<SessaoDetalhesDTO>> minhasSessoes();
 
     @GET("v1/sessoes/{id}")
-    Call<SessaoDetalhesDTO> getSessaoPorId(
-            @Header("Authorization") String token,
-            @Path("id") String id
-    );
+    Call<SessaoDetalhesDTO> getSessaoPorId(@Path("id") String id);
 
     @POST("v1/sessoes/iniciar")
-    Call<Void> iniciarSessao(
-            @Header("Authorization") String token
-    );
+    Call<Void> iniciarSessao();
 
     @PUT("v1/sessoes/{id}/encerrar")
-    Call<SessaoDetalhesDTO> encerrarSessao(
-            @Header("Authorization") String token,
-            @Path("id") String id
-    );
+    Call<SessaoDetalhesDTO> encerrarSessao(@Path("id") String id);
 
+
+    // ==========================================
     // TELEMETRIA
-    @GET("v1/telemetrias/atual")
-    Call<TelemetriaResponseDTO> getTelemetriaAtual(
-            @Header("Authorization") String token
-    );
+    // ==========================================
+    // Atualizado para bater com o Spring: /forno/{fornoId}/atual
+    @GET("v1/telemetrias/forno/{fornoId}/atual")
+    Call<TelemetriaResponseDTO> getTelemetriaAtual(@Path("fornoId") String fornoId);
 
-    @GET("v1/telemetrias/dashboard")
-    Call<DashboardDTO> getDashboard(
-            @Header("Authorization") String token
-    );
+    // Atualizado para bater com o Spring: /forno/{fornoId}/dashboard
+    @GET("v1/telemetrias/forno/{fornoId}/dashboard")
+    Call<DashboardDTO> getDashboard(@Path("fornoId") String fornoId);
 
+
+    // ==========================================
     // TEMPERATURAS
+    // ==========================================
     @GET("v1/temperaturas/minhas")
-    Call<List<TemperaturaDTO>> minhasTemperaturas(
-            @Header("Authorization") String token
-    );
+    Call<List<TemperaturaDTO>> minhasTemperaturas();
+
+    //historico
+    @GET("v1/sessoes")
+    Call<List<Sessao>> getHistoricoSessoes();
 }
