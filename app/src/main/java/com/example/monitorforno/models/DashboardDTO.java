@@ -1,6 +1,8 @@
 package com.example.monitorforno.models;
 
 public class DashboardDTO {
+
+    private String fornoId;
     private Double temperaturaAtual;
     private Double temperaturaUltima;
     private String estadoForno;
@@ -11,6 +13,14 @@ public class DashboardDTO {
     private String ultimoEvento;
     private String proximoTemporizador;
     private String atualizadoEm;
+
+    public String getFornoId(){
+        return fornoId;
+    }
+
+    public void setFornoId(String fornoId){
+        this.fornoId = fornoId;
+    }
 
     public Double getTemperaturaAtual() { return temperaturaAtual; }
     public Double getTemperaturaUltima() { return temperaturaUltima; }

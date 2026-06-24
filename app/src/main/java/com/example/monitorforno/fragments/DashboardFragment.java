@@ -3,6 +3,7 @@ package com.example.monitorforno.fragments;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,30 +61,56 @@ public class DashboardFragment extends Fragment {
 
         // EXECUÇÃO DO DIAGRAMA: Chama o Dashboard vindo da API Spring
         // Substitua pelo UUID real de um forno cadastrado no seu banco para testes
-        String fornoIdDeTeste = "COLOQUE_AQUI_O_UUID_DO_FORNO";
+        String fornoIdDeTeste = "b06f3899-1060-4bec-b0f7-1bd6c5fcce90";
         carregarDadosDoDashboard(fornoIdDeTeste);
 
         return view;
     }
 
     private void carregarDadosDoDashboard(String fornoId) {
-        // Passamos apenas o contexto. O token é injetado sozinho!
-        ApiService apiService = RetrofitClient.getApiService(getContext());
+        // 1. Rastreador antes de iniciar
+        Log.d("DEBUG_API", "Iniciando chamada para o dashboard. FornoID: " + fornoId);
 
-        apiService.getDashboard(fornoId).enqueue(new Callback<DashboardDTO>() {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+
+        apiService.getDashboard(fornoId).enqueue(new Callback<DashboardDTO>() { // Confirme o nome do seu DTO
             @Override
-            public void onResponse(@NonNull Call<DashboardDTO> call, @NonNull Response<DashboardDTO> response) {
+            public void onResponse(Call<DashboardDTO> call, Response<DashboardDTO> response) {
+
+                // 2. Rastreador quando a resposta chega
+                Log.d("DEBUG_API", "Resposta recebida! Código: " + response.code());
+
                 if (response.isSuccessful() && response.body() != null) {
+                    // Sucesso
                     DashboardDTO dados = response.body();
                     vincularDadosNaTela(dados);
+                    Toast.makeText(requireContext(), "Sucesso!", Toast.LENGTH_SHORT).show();
+
                 } else {
-                    Toast.makeText(getContext(), "Erro no servidor: " + response.code(), Toast.LENGTH_SHORT).show();
+                    try {
+                        String erroExato = response.errorBody() != null
+                                ? response.errorBody().string()
+                                : "";
+
+                        // Se o Spring Security mandar vazio, nós avisamos!
+                        if (erroExato.trim().isEmpty()) {
+                            erroExato = "O servidor bloqueou (403) mas não enviou texto de erro.";
+                        }
+
+                        Log.e("DEBUG_API", "Detalhes do Erro: " + erroExato);
+                        Toast.makeText(requireContext(), "Erro " + response.code() + ": " + erroExato, Toast.LENGTH_LONG).show();
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<DashboardDTO> call, @NonNull Throwable t) {
-                Toast.makeText(getContext(), "Falha de rede: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onFailure(Call<DashboardDTO> call, Throwable t) {
+                // 3. Rastreador de falha de rede
+                Log.e("DEBUG_API", "Caiu no onFailure! Motivo: " + t.getMessage());
+                Toast.makeText(requireContext(), "Falha: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

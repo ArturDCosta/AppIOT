@@ -44,7 +44,7 @@ public class HistoricoFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         // Inicia a busca real na API assim que a tela abre
-        buscarSessoesDaApi();
+            buscarSessoesDaApi();
 
         return view;
     }
