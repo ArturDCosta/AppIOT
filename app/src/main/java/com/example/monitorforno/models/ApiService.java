@@ -50,4 +50,7 @@ public interface ApiService {
     //historico
     @GET("v1/sessoes")
     Call<List<Sessao>> getHistoricoSessoes();
+
+    @GET("v1/usuario/meu-perfil")
+    Call<PerfilDTO> getMeuPerfil();
 }
