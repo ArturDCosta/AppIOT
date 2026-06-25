@@ -46,7 +46,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Rafael"
                     android:textSize="22sp"
                     android:textColor="@color/white"
                     android:textStyle="bold"/>
@@ -55,8 +54,7 @@
                     android:id="@+id/txtEmailPerfil"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:text="rafa@gmail.com"/>
+                    android:textColor="@color/white"/>
 
             </LinearLayout>
 
@@ -86,8 +84,7 @@
                     android:id="@+id/txtNome"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:text="Rafael"/>
+                    android:textColor="@color/white"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -101,8 +98,7 @@
                     android:id="@+id/txtEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:text="rafa@gmail.com"/>
+                    android:textColor="@color/white"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -116,8 +112,7 @@
                     android:id="@+id/txtNascimento"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:text="13/02/2009"/>
+                    android:textColor="@color/white"/>
 
             </LinearLayout>
 

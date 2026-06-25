@@ -19,6 +19,7 @@ import com.example.monitorforno.activities.LoginActivity;
 import com.example.monitorforno.models.ApiService;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.models.PerfilDTO;
+import com.example.monitorforno.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
 
 import retrofit2.Call;
@@ -43,9 +44,6 @@ public class PerfilFragment extends Fragment {
         MaterialButton btnAlterarSenha = view.findViewById(R.id.btnAlterarSenha);
         MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
 
-        // Limpar os textos genéricos ("Rafael Fiorio") e colocar estado de carregamento
-        limparTextos();
-
         // 2. Chamar a API
         buscarPerfilNaApi();
 
@@ -55,11 +53,13 @@ public class PerfilFragment extends Fragment {
         );
 
         btnLogout.setOnClickListener(v -> {
-            // DICA: Adicione aqui a lógica para apagar o Token salvo no Android (SharedPreferences)
-            // antes de mandar o usuário para a LoginActivity!
 
+            // Chama a classe que gerencia a sessão e pede para limpar
+            SessionManager sessionManager = new SessionManager(requireContext());
+            sessionManager.limparSessao();
+
+            // Redireciona para o Login
             Intent intent = new Intent(getActivity(), LoginActivity.class);
-            // Isso impede que o usuário volte para o perfil apertando o botão "Voltar" do celular
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             requireActivity().finish();
@@ -104,13 +104,5 @@ public class PerfilFragment extends Fragment {
                 Toast.makeText(getContext(), "Erro de conexão com servidor.", Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private void limparTextos() {
-        txtNomePerfil.setText("Carregando...");
-        txtEmailPerfil.setText("...");
-        txtNome.setText("...");
-        txtEmail.setText("...");
-        txtNascimento.setText("...");
     }
 }
