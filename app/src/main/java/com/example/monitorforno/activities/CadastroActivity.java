@@ -92,8 +92,8 @@ public class CadastroActivity extends AppCompatActivity {
             Toast.makeText(this, "Selecione a data de nascimento", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (senha.isEmpty() || senha.length() < 6) {
-            edtSenha.setError("A senha deve conter pelo menos 6 caracteres");
+        if (senha.isEmpty() || senha.length() < 8) {
+            edtSenha.setError("A senha deve conter pelo menos 8 caracteres");
             edtSenha.requestFocus();
             return;
         }

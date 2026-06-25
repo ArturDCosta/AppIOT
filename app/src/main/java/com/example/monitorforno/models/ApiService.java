@@ -57,4 +57,7 @@ public interface ApiService {
 
     @GET("v1/usuario/meu-perfil")
     Call<PerfilDTO> getMeuPerfil();
+
+    @GET("v1/temperaturas")
+    Call<List<TemperaturaDTO>> getHistoricoTemperaturas();
 }
