@@ -59,7 +59,8 @@ public class LoginActivity extends AppCompatActivity {
 
         txtCadastro.setOnClickListener(v -> {
             // Implementar depois
-            Toast.makeText(this, "Em breve", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(LoginActivity.this, CadastroActivity.class);
+            startActivity(intent);
         });
     }
 

@@ -12,6 +12,10 @@ public interface ApiService {
     @POST("v1/auth/login")
     Call<LoginResponseDTO> login(@Body LoginRequestDTO dto);
 
+    //cadastro
+    @POST("v1/usuario")
+    Call<Void> cadastrarUsuario(@Body UserRequestDTO dto);
+
 
     // ==========================================
     // SESSÕES
