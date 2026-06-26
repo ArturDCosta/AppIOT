@@ -11,6 +11,32 @@
         android:background="@color/background_dark"
         android:padding="16dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <Spinner
+                android:id="@+id/spinnerFornos"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:backgroundTint="@color/white"
+                android:spinnerMode="dropdown"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEscaneadorQr"
+                style="@style/Widget.MaterialComponents.Button.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                app:icon="@android:drawable/ic_menu_camera"
+                app:backgroundTint="@color/primary_green_dark"
+                android:text="Adicionar"/>
+        </LinearLayout>
+
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -25,9 +51,9 @@
                 android:padding="20dp">
 
                 <TextView
+                    android:id="@+id/txtNomeForno"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Forno"
                     android:textSize="24sp"
                     android:textColor="@color/white"
                     android:textStyle="bold"/>
@@ -36,8 +62,6 @@
                     android:id="@+id/txtEstadoSistema"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/alerta_verde"
-                    android:text="Operação Normal"
                     android:textSize="16sp"/>
             </LinearLayout>
 
@@ -61,7 +85,6 @@
                     android:id="@+id/txtTemperaturaAtual"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="185°C"
                     android:textSize="42sp"
                     android:textColor="@color/white"
                     android:textStyle="bold"/>
@@ -70,7 +93,6 @@
                     android:id="@+id/txtEstadoForno"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="FORNO AQUECENDO"
                     android:textColor="@color/white"
                     android:textSize="18sp"/>
 
@@ -108,7 +130,6 @@
                         android:id="@+id/txtAtual"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="185°C"
                         android:textSize="22sp"
                         android:textColor="@color/white"
                         android:textStyle="bold"/>
@@ -141,7 +162,6 @@
                         android:id="@+id/txtUltima"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="184°C"
                         android:textSize="22sp"
                         android:textColor="@color/white"
                         android:textStyle="bold"/>
@@ -213,7 +233,6 @@
                         android:id="@+id/txtTempoLigado"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="2h 35m"
                         android:textSize="22sp"
                         android:textColor="@color/white"
                         android:textStyle="bold"/>
@@ -246,7 +265,6 @@
                     android:id="@+id/txtTemporizador"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="22:00"
                     android:textSize="24sp"
                     android:textColor="@color/white"
                     android:textStyle="bold"/>

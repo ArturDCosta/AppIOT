@@ -7,6 +7,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,8 +23,13 @@ import com.example.monitorforno.adapters.EventoAdapter;
 import com.example.monitorforno.models.ApiService;
 import com.example.monitorforno.models.DashboardDTO;
 import com.example.monitorforno.models.Evento;
+import com.example.monitorforno.models.FornoResponseDTO;
+import com.example.monitorforno.models.VincularFornoDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.utils.CustomDivisor;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanner;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
@@ -33,16 +41,24 @@ import retrofit2.Response;
 
 public class DashboardFragment extends Fragment {
 
-    private TextView txtSistemaAtual, txtEstadoSistema, txtTemperaturaAtual, txtEstadoForno, txtAtual, txtUltima, txtTempoLigado, txtTemporizador;
+    private com.example.monitorforno.utils.SessionManager sessionManager;
+
+    // Componentes do XML mapeados
+    private TextView txtNomeForno, txtSistema, txtEstadoSistema, txtTemperaturaAtual, txtEstadoForno, txtAtual, txtUltima, txtTempoLigado, txtTemporizador;
     private MaterialCardView cardEstadoForno, cardTemperaturaAtual, cardUltimaTemperatura;
     private RecyclerView recyclerAlertas;
+
+    private Spinner spinnerFornos;
+    private MaterialButton btnEscaneadorQr;
+    private List<FornoResponseDTO> listaDeFornosDoUsuario = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
-        // Mapeando componentes do XML
-        txtSistemaAtual = view.findViewById(R.id.txtSistema);
+        // Mapeando componentes conforme IDs exatos do seu XML atualizado
+        txtNomeForno = view.findViewById(R.id.txtNomeForno);
+        txtSistema = view.findViewById(R.id.txtSistema);
         txtEstadoSistema = view.findViewById(R.id.txtEstadoSistema);
         txtTemperaturaAtual = view.findViewById(R.id.txtTemperaturaAtual);
         txtEstadoForno = view.findViewById(R.id.txtEstadoForno);
@@ -55,112 +71,166 @@ public class DashboardFragment extends Fragment {
         cardTemperaturaAtual = view.findViewById(R.id.cardTemperaturaAtual);
         cardUltimaTemperatura = view.findViewById(R.id.cardUltimaTemperatura);
         recyclerAlertas = view.findViewById(R.id.recyclerAlertas);
+        spinnerFornos = view.findViewById(R.id.spinnerFornos);
+        btnEscaneadorQr = view.findViewById(R.id.btnEscaneadorQr);
+
+        sessionManager = new com.example.monitorforno.utils.SessionManager(requireContext());
 
         configurarRecyclerAlertas();
         configurarCliquesCards();
 
-        // EXECUÇÃO DO DIAGRAMA: Chama o Dashboard vindo da API Spring
-        // Substitua pelo UUID real de um forno cadastrado no seu banco para testes
-        String fornoIdDeTeste = "b06f3899-1060-4bec-b0f7-1bd6c5fcce90";
-        carregarDadosDoDashboard(fornoIdDeTeste);
+        btnEscaneadorQr.setOnClickListener(v -> abrirLeitorQrCode());
+
+        // Carrega a listagem de fornos associados ao usuário
+        carregarListaDeFornos();
 
         return view;
     }
 
-    private void carregarDadosDoDashboard(String fornoId) {
-        // 1. Rastreador antes de iniciar
-        Log.d("DEBUG_API", "Iniciando chamada para o dashboard. FornoID: " + fornoId);
-
+    private void carregarListaDeFornos() {
         ApiService apiService = RetrofitClient.getApiService(requireContext());
-
-        apiService.getDashboard(fornoId).enqueue(new Callback<DashboardDTO>() { // Confirme o nome do seu DTO
+        apiService.buscarMeusFornos().enqueue(new Callback<List<FornoResponseDTO>>() {
             @Override
-            public void onResponse(Call<DashboardDTO> call, Response<DashboardDTO> response) {
-
-                // 2. Rastreador quando a resposta chega
-                Log.d("DEBUG_API", "Resposta recebida! Código: " + response.code());
-
+            public void onResponse(Call<List<FornoResponseDTO>> call, Response<List<FornoResponseDTO>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // Sucesso
-                    DashboardDTO dados = response.body();
-                    vincularDadosNaTela(dados);
-                    Toast.makeText(requireContext(), "Sucesso!", Toast.LENGTH_SHORT).show();
+                    listaDeFornosDoUsuario = response.body();
 
-                } else {
-                    try {
-                        String erroExato = response.errorBody() != null
-                                ? response.errorBody().string()
-                                : "";
-
-                        // Se o Spring Security mandar vazio, nós avisamos!
-                        if (erroExato.trim().isEmpty()) {
-                            erroExato = "O servidor bloqueou (403) mas não enviou texto de erro.";
-                        }
-
-                        Log.e("DEBUG_API", "Detalhes do Erro: " + erroExato);
-                        Toast.makeText(requireContext(), "Erro " + response.code() + ": " + erroExato, Toast.LENGTH_LONG).show();
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    if (!listaDeFornosDoUsuario.isEmpty()) {
+                        configurarSpinnerFornos();
+                    } else {
+                        // Se a lista vier vazia, limpa a tela e avisa o usuário
+                        vincularDadosNaTela(null, "Nenhum Forno");
+                        Toast.makeText(requireContext(), "Escaneie o QR Code do forno para começar!", Toast.LENGTH_LONG).show();
                     }
                 }
             }
 
             @Override
-            public void onFailure(Call<DashboardDTO> call, Throwable t) {
-                // 3. Rastreador de falha de rede
-                Log.e("DEBUG_API", "Caiu no onFailure! Motivo: " + t.getMessage());
-                Toast.makeText(requireContext(), "Falha: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            public void onFailure(Call<List<FornoResponseDTO>> call, Throwable t) {
+                Log.e("DEBUG_API", "Erro ao buscar lista: " + t.getMessage());
+                vincularDadosNaTela(null, "Erro de Conexão");
             }
         });
     }
 
-    private void vincularDadosNaTela(DashboardDTO dados) {
-        // 1. Atualiza Temperaturas (Arredondando para não mostrar casas decimais longas)
-        String tempAtualTexto = (dados.getTemperaturaAtual() != null ? Math.round(dados.getTemperaturaAtual()) : 0) + "°C";
-        String tempUltimaTexto = (dados.getTemperaturaUltima() != null ? Math.round(dados.getTemperaturaUltima()) : 0) + "°C";
+    private void configurarSpinnerFornos() {
+        ArrayAdapter<FornoResponseDTO> adapter = new ArrayAdapter<>(
+                requireContext(), android.R.layout.simple_spinner_item, listaDeFornosDoUsuario);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerFornos.setAdapter(adapter);
 
+        String idSalvo = sessionManager.getFornoSelecionadoId();
+        int posicaoParaSelecionar = 0; // Padrão é o primeiro se não achar nada
+
+        if (idSalvo != null) {
+            for (int i = 0; i < listaDeFornosDoUsuario.size(); i++) {
+                if (idSalvo.equals(listaDeFornosDoUsuario.get(i).getId())) {
+                    posicaoParaSelecionar = i;
+                    break;
+                }
+            }
+        }
+        // Força o spinner a apontar para a posição correta antes do usuário interagir
+        spinnerFornos.setSelection(posicaoParaSelecionar);
+        // ----------------------------------------------
+
+        spinnerFornos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                FornoResponseDTO fornoSelecionado = listaDeFornosDoUsuario.get(position);
+
+                // GRAVA NA SESSÃO: Toda vez que o usuário mudar o seletor, salvamos no SharedPreferences
+                sessionManager.salvarFornoSelecionado(fornoSelecionado.getId());
+
+                carregarDadosDoDashboard(fornoSelecionado.getId(), fornoSelecionado.getNome());
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void carregarDadosDoDashboard(String fornoId, String nomeForno) {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        apiService.getDashboard(fornoId).enqueue(new Callback<DashboardDTO>() {
+            @Override
+            public void onResponse(Call<DashboardDTO> call, Response<DashboardDTO> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    vincularDadosNaTela(response.body(), nomeForno);
+                } else {
+                    // Se a requisição falhar ou retornar corpo vazio, assume-se forno offline/desligado
+                    vincularDadosNaTela(null, nomeForno);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DashboardDTO> call, Throwable t) {
+                // Falha de rede trata como offline mantendo o nome do forno selecionado
+                vincularDadosNaTela(null, nomeForno);
+            }
+        });
+    }
+
+    private void vincularDadosNaTela(DashboardDTO dados, String nomeForno) {
+        // 1. Vincula o nome vindo do seletor da API
+        txtNomeForno.setText(nomeForno != null ? nomeForno : "--");
+
+        // Caso o objeto de telemetria seja inteiramente nulo (Forno Desligado / Sem dados)
+        if (dados == null) {
+            txtTemperaturaAtual.setText("--");
+            txtAtual.setText("--");
+            txtUltima.setText("--");
+            txtTempoLigado.setText("--");
+            txtTemporizador.setText("--");
+            txtSistema.setText("--");
+            txtEstadoSistema.setText("--");
+            txtEstadoSistema.setTextColor(Color.GRAY);
+
+            txtEstadoForno.setText("FORNO DESLIGADO");
+            cardEstadoForno.setCardBackgroundColor(getResources().getColor(R.color.forno_desligado));
+            return; // Interrompe a execução aqui pois não há mais dados para validar
+        }
+
+        // 2. Tratamento individual campo a campo se o objeto existir mas tiver propriedades nulas
+
+        // Temperaturas
+        String tempAtualTexto = dados.getTemperaturaAtual() != null ? Math.round(dados.getTemperaturaAtual()) + "°C" : "--";
+        String tempUltimaTexto = dados.getTemperaturaUltima() != null ? Math.round(dados.getTemperaturaUltima()) + "°C" : "--";
         txtTemperaturaAtual.setText(tempAtualTexto);
         txtAtual.setText(tempAtualTexto);
         txtUltima.setText(tempUltimaTexto);
 
-        // 2. Formata Tempo Ligado (De Long minutos para formato "Xh Ym")
+        // Tempo Ligado
         if (dados.getTempoLigadoMinutos() != null) {
             long totalMinutos = dados.getTempoLigadoMinutos();
             long horas = totalMinutos / 60;
             long minutos = totalMinutos % 60;
-
-            if (horas > 0) {
-                txtTempoLigado.setText(horas + "h " + minutos + "m");
-            } else {
-                txtTempoLigado.setText(minutos + "m");
-            }
+            txtTempoLigado.setText(horas > 0 ? horas + "h " + minutos + "m" : minutos + "m");
         } else {
             txtTempoLigado.setText("--");
         }
 
-        // Próximo temporizador
+        // Temporizador
         txtTemporizador.setText(dados.getProximoTemporizador() != null ? dados.getProximoTemporizador() : "--");
 
-        // 3. Atualiza Estado do Sistema (Cores dinâmicas baseadas no DTO)
-        String estadoSistema = dados.getEstadoSistema() != null ? dados.getEstadoSistema() : "DESCONHECIDO";
-        txtSistemaAtual.setText(estadoSistema);
+        // Status do Sistema (Seguro, Alerta, Crítico)
+        String estadoSistema = dados.getEstadoSistema() != null ? dados.getEstadoSistema() : "--";
+        txtSistema.setText(estadoSistema);
         txtEstadoSistema.setText(estadoSistema);
 
+        // Altera cor do texto com base no estado do sistema
         if ("SEGURO".equals(estadoSistema) || "OPERACAO_NORMAL".equals(estadoSistema)) {
-            txtSistemaAtual.setTextColor(getResources().getColor(R.color.alerta_verde));
+            txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_verde));
         } else if ("ALERTA".equals(estadoSistema)) {
-            txtSistemaAtual.setTextColor(getResources().getColor(R.color.alerta_laranja));
+            txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_laranja));
         } else if ("CRITICO".equals(estadoSistema)) {
-            txtSistemaAtual.setTextColor(getResources().getColor(R.color.alerta_vermelho));
+            txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_vermelho));
         } else {
-            txtSistemaAtual.setTextColor(Color.GRAY);
+            txtEstadoSistema.setTextColor(Color.GRAY);
         }
 
-        // 4. Atualiza Estado do Forno (CardBackground dinâmico baseado no DTO)
+        // Status de Atividade do Forno (Aquecendo, Ativo, Esfriando, Desligado)
         String estadoForno = dados.getEstadoForno() != null ? dados.getEstadoForno() : "FORNO_DESLIGADO";
-
-        // Remove os underlines para exibir bonitinho na tela (Ex: "FORNO AQUECENDO")
         txtEstadoForno.setText(estadoForno.replace("_", " "));
 
         switch (estadoForno) {
@@ -180,23 +250,48 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    // Métodos secundários mantidos para o funcionamento geral
+    private void abrirLeitorQrCode() {
+        GmsBarcodeScanner scanner = GmsBarcodeScanning.getClient(requireContext());
+        scanner.startScan()
+                .addOnSuccessListener(barcode -> {
+                    String conteudo = barcode.getRawValue();
+                    if (conteudo != null && conteudo.contains(";")) {
+                        String[] partes = conteudo.split(";");
+                        enviarVinculoParaApi(partes[0].trim(), partes[1].trim());
+                    } else {
+                        Toast.makeText(requireContext(), "Formato de QR Code Inválido.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void enviarVinculoParaApi(String serial, String pin) {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        apiService.vincularForno(new VincularFornoDTO(serial, pin)).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(requireContext(), "Forno adicionado!", Toast.LENGTH_SHORT).show();
+                    carregarListaDeFornos();
+                }
+            }
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {}
+        });
+    }
+
     private void configurarRecyclerAlertas() {
         List<Evento> eventos = new ArrayList<>();
-        eventos.add(new Evento("Sistema entrou em alerta", "18:30"));
-        eventos.add(new Evento("Estado crítico", "18:20"));
+        eventos.add(new Evento("Sistema inicializado", "12:00"));
         recyclerAlertas.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerAlertas.addItemDecoration(new CustomDivisor(getContext()));
         recyclerAlertas.setAdapter(new EventoAdapter(eventos));
     }
 
     private void configurarCliquesCards() {
-        // Abre o fragment de temperatura ao clicar nos cards de temperatura
         View.OnClickListener abrirTemperatura = v -> getParentFragmentManager()
-                .beginTransaction()
-                .replace(R.id.fragment_container, new TemperaturaFragment())
-                .addToBackStack(null)
-                .commit();
-
+                .beginTransaction().replace(R.id.fragment_container, new TemperaturaFragment())
+                .addToBackStack(null).commit();
         cardTemperaturaAtual.setOnClickListener(abrirTemperatura);
         cardUltimaTemperatura.setOnClickListener(abrirTemperatura);
     }

@@ -3,6 +3,8 @@ package com.example.monitorforno.models;
 import retrofit2.Call;
 import retrofit2.http.*;
 import java.util.List;
+import com.example.monitorforno.models.VincularFornoDTO;
+import com.example.monitorforno.models.FornoResponseDTO;
 
 public interface ApiService {
 
@@ -60,4 +62,13 @@ public interface ApiService {
 
     @GET("v1/temperaturas")
     Call<List<TemperaturaDTO>> getHistoricoTemperaturas();
+
+    //============================
+    //FORNOS
+    //============================
+    @GET("v1/fornos/vincular")
+    Call<Void> vincularForno (@Body VincularFornoDTO dto);
+
+    @GET("v1/fornos/meus")
+    Call<List<FornoResponseDTO>> buscarMeusFornos();
 }

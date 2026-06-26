@@ -35,6 +35,18 @@ public class SessionManager {
         return "Bearer " + token;
     }
 
+    // Salva o ID do forno que o usuário acabou de clicar (Corrigido para usar prefs.edit())
+    public void salvarFornoSelecionado(String fornoId) {
+        prefs.edit()
+                .putString("FORNO_SELECIONADO_ID", fornoId)
+                .apply();
+    }
+
+    // Recupera o ID salvo (Corrigido para usar prefs)
+    public String getFornoSelecionadoId() {
+        return prefs.getString("FORNO_SELECIONADO_ID", null);
+    }
+
     public String getUserId() {
         return prefs.getString(KEY_USER_ID, null);
     }
