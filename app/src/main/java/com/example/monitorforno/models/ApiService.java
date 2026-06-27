@@ -71,4 +71,8 @@ public interface ApiService {
 
     @GET("v1/fornos/meus")
     Call<List<FornoResponseDTO>> buscarMeusFornos();
+
+    //alertas
+    @GET("v1/eventos/forno/{fornoId}")
+    Call<List<EventoDTO>> getAlertasDoForno(@Path("fornoId") String fornoId);
 }

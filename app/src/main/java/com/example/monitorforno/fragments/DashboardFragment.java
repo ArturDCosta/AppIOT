@@ -22,7 +22,7 @@ import com.example.monitorforno.R;
 import com.example.monitorforno.adapters.EventoAdapter;
 import com.example.monitorforno.models.ApiService;
 import com.example.monitorforno.models.DashboardDTO;
-import com.example.monitorforno.models.Evento;
+import com.example.monitorforno.models.EventoDTO;
 import com.example.monitorforno.models.FornoResponseDTO;
 import com.example.monitorforno.models.VincularFornoDTO;
 import com.example.monitorforno.network.RetrofitClient;
@@ -76,7 +76,10 @@ public class DashboardFragment extends Fragment {
 
         sessionManager = new com.example.monitorforno.utils.SessionManager(requireContext());
 
-        configurarRecyclerAlertas();
+        // Prepara o visual do Recycler de alertas para receber os dados
+        recyclerAlertas.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerAlertas.addItemDecoration(new CustomDivisor(getContext()));
+
         configurarCliquesCards();
 
         btnEscaneadorQr.setOnClickListener(v -> abrirLeitorQrCode());
@@ -132,7 +135,6 @@ public class DashboardFragment extends Fragment {
         }
         // Força o spinner a apontar para a posição correta antes do usuário interagir
         spinnerFornos.setSelection(posicaoParaSelecionar);
-        // ----------------------------------------------
 
         spinnerFornos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -142,7 +144,9 @@ public class DashboardFragment extends Fragment {
                 // GRAVA NA SESSÃO: Toda vez que o usuário mudar o seletor, salvamos no SharedPreferences
                 sessionManager.salvarFornoSelecionado(fornoSelecionado.getId());
 
+                // 100% API: Carrega as telemetrias e os alertas
                 carregarDadosDoDashboard(fornoSelecionado.getId(), fornoSelecionado.getNome());
+                carregarAlertasReaisNoDashboard(fornoSelecionado.getId());
             }
 
             @Override
@@ -171,6 +175,39 @@ public class DashboardFragment extends Fragment {
         });
     }
 
+    private void carregarAlertasReaisNoDashboard(String fornoId) {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+
+        apiService.getAlertasDoForno(fornoId).enqueue(new Callback<List<EventoDTO>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<EventoDTO>> call, @NonNull Response<List<EventoDTO>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<EventoDTO> todosEventos = response.body();
+
+                    // Pega apenas os 3 alertas mais recentes para o Dashboard
+                    List<EventoDTO> ultimosEventos;
+                    if (todosEventos.size() > 3) {
+                        ultimosEventos = todosEventos.subList(0, 3);
+                    } else {
+                        ultimosEventos = todosEventos;
+                    }
+
+                    // Joga os dados reais no Adapter
+                    recyclerAlertas.setAdapter(new EventoAdapter(ultimosEventos));
+                } else {
+                    // Limpa a lista caso não tenha dados (sem fakes)
+                    recyclerAlertas.setAdapter(new EventoAdapter(new ArrayList<>()));
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<EventoDTO>> call, @NonNull Throwable t) {
+                // Limpa a lista em caso de falha de conexão
+                recyclerAlertas.setAdapter(new EventoAdapter(new ArrayList<>()));
+            }
+        });
+    }
+
     private void vincularDadosNaTela(DashboardDTO dados, String nomeForno) {
         // 1. Vincula o nome vindo do seletor da API
         txtNomeForno.setText(nomeForno != null ? nomeForno : "--");
@@ -188,10 +225,8 @@ public class DashboardFragment extends Fragment {
 
             txtEstadoForno.setText("FORNO DESLIGADO");
             cardEstadoForno.setCardBackgroundColor(getResources().getColor(R.color.forno_desligado));
-            return; // Interrompe a execução aqui pois não há mais dados para validar
+            return;
         }
-
-        // 2. Tratamento individual campo a campo se o objeto existir mas tiver propriedades nulas
 
         // Temperaturas
         String tempAtualTexto = dados.getTemperaturaAtual() != null ? Math.round(dados.getTemperaturaAtual()) + "°C" : "--";
@@ -213,12 +248,11 @@ public class DashboardFragment extends Fragment {
         // Temporizador
         txtTemporizador.setText(dados.getProximoTemporizador() != null ? dados.getProximoTemporizador() : "--");
 
-        // Status do Sistema (Seguro, Alerta, Crítico)
+        // Status do Sistema
         String estadoSistema = dados.getEstadoSistema() != null ? dados.getEstadoSistema() : "--";
         txtSistema.setText(estadoSistema);
         txtEstadoSistema.setText(estadoSistema);
 
-        // Altera cor do texto com base no estado do sistema
         if ("SEGURO".equals(estadoSistema) || "OPERACAO_NORMAL".equals(estadoSistema)) {
             txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_verde));
         } else if ("ALERTA".equals(estadoSistema)) {
@@ -229,7 +263,7 @@ public class DashboardFragment extends Fragment {
             txtEstadoSistema.setTextColor(Color.GRAY);
         }
 
-        // Status de Atividade do Forno (Aquecendo, Ativo, Esfriando, Desligado)
+        // Status do Forno
         String estadoForno = dados.getEstadoForno() != null ? dados.getEstadoForno() : "FORNO_DESLIGADO";
         txtEstadoForno.setText(estadoForno.replace("_", " "));
 
@@ -250,7 +284,6 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    // Métodos secundários mantidos para o funcionamento geral
     private void abrirLeitorQrCode() {
         GmsBarcodeScanner scanner = GmsBarcodeScanning.getClient(requireContext());
         scanner.startScan()
@@ -278,14 +311,6 @@ public class DashboardFragment extends Fragment {
             @Override
             public void onFailure(Call<Void> call, Throwable t) {}
         });
-    }
-
-    private void configurarRecyclerAlertas() {
-        List<Evento> eventos = new ArrayList<>();
-        eventos.add(new Evento("Sistema inicializado", "12:00"));
-        recyclerAlertas.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerAlertas.addItemDecoration(new CustomDivisor(getContext()));
-        recyclerAlertas.setAdapter(new EventoAdapter(eventos));
     }
 
     private void configurarCliquesCards() {
