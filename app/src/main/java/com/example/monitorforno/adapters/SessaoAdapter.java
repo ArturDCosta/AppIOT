@@ -1,5 +1,6 @@
 package com.example.monitorforno.adapters;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,104 +11,62 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.monitorforno.R;
-import com.example.monitorforno.models.Sessao;
+import com.example.monitorforno.activities.DetalhesSessaoActivity;
+import com.example.monitorforno.models.SessaoDetalhesDTO;
 
 import java.util.List;
-import android.content.Intent;
 
-import com.example.monitorforno.activities.DetalhesSessaoActivity;
+public class SessaoAdapter extends RecyclerView.Adapter<SessaoAdapter.ViewHolder> {
 
-public class SessaoAdapter
-        extends RecyclerView.Adapter<SessaoAdapter.ViewHolder> {
+    // Substituímos a classe 'Sessao' pela classe DTO da API
+    private final List<SessaoDetalhesDTO> sessoes;
 
-    private final List<Sessao> sessoes;
-
-    public SessaoAdapter(List<Sessao> sessoes) {
+    public SessaoAdapter(List<SessaoDetalhesDTO> sessoes) {
         this.sessoes = sessoes;
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(
-            @NonNull ViewGroup parent,
-            int viewType) {
-
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(
-                        R.layout.item_sessao,
-                        parent,
-                        false
-                );
-
+                .inflate(R.layout.item_sessao, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(
-            @NonNull ViewHolder holder,
-            int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        SessaoDetalhesDTO sessao = sessoes.get(position);
 
-        Sessao sessao = sessoes.get(position);
+        holder.txtData.setText(sessao.getData() != null ? sessao.getData() : "--/--/----");
+        holder.txtHorario.setText(sessao.getHorarioInicio() != null ? sessao.getHorarioInicio() : "--:--");
+        holder.txtDuracao.setText(sessao.getDuracao() != null ? sessao.getDuracao() : "0m");
 
-        holder.txtData.setText(sessao.getData());
-        holder.txtHorario.setText(sessao.getHorario());
-        holder.txtDuracao.setText(sessao.getDuracao());
-        holder.txtEstado.setText(sessao.getEstado());
+        String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal() : "DESCONHECIDO";
+        holder.txtEstado.setText(estado.replace("_", " "));
 
-        holder.txtEstado.setText(sessao.getEstado());
-        switch (sessao.getEstado()) {
-
+        // Cores baseadas no estado da sessão
+        switch (estado) {
             case "FORNO_ATIVO":
-                holder.txtEstado.setTextColor(
-                        Color.parseColor("#32ad34")
-                );
+                holder.txtEstado.setTextColor(Color.parseColor("#4CAF50")); // Verde
                 break;
-
             case "FORNO_AQUECENDO":
-                holder.txtEstado.setTextColor(
-                        Color.parseColor("#fc9403")
-                );
+                holder.txtEstado.setTextColor(Color.parseColor("#FF9800")); // Laranja
                 break;
-
             case "FORNO_ESFRIANDO":
-                holder.txtEstado.setTextColor(
-                        Color.parseColor("#2426ab")
-                );
+                holder.txtEstado.setTextColor(Color.parseColor("#2196F3")); // Azul
                 break;
-
             case "FORNO_DESLIGADO":
-                holder.txtEstado.setTextColor(
-                        Color.GRAY
-                );
+            default:
+                holder.txtEstado.setTextColor(Color.GRAY);
                 break;
         }
 
+        // Evento de clique para abrir os Detalhes da Sessão
         holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(v.getContext(), DetalhesSessaoActivity.class);
 
-            Intent intent = new Intent(
-                    v.getContext(),
-                    DetalhesSessaoActivity.class
-            );
-
-            intent.putExtra(
-                    "SESSAO_ID",
-                    sessao.getData()
-            );
-
-            intent.putExtra(
-                    "horarioSessao",
-                    sessao.getHorario()
-            );
-
-            intent.putExtra(
-                    "duracaoSessao",
-                    sessao.getDuracao()
-            );
-
-            intent.putExtra(
-                    "estadoSessao",
-                    sessao.getEstado()
-            );
+            // O MAIS IMPORTANTE: Passar o ID real da sessão (Ex: "f47ac10b-58cc-4372-a567-0e02b2c3d479")
+            intent.putExtra("SESSAO_ID", sessao.getId());
 
             v.getContext().startActivity(intent);
         });
@@ -115,20 +74,14 @@ public class SessaoAdapter
 
     @Override
     public int getItemCount() {
-        return sessoes.size();
+        return sessoes != null ? sessoes.size() : 0;
     }
 
-    static class ViewHolder
-            extends RecyclerView.ViewHolder {
-
-        TextView txtData;
-        TextView txtHorario;
-        TextView txtDuracao;
-        TextView txtEstado;
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView txtData, txtHorario, txtDuracao, txtEstado;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-
             txtData = itemView.findViewById(R.id.txtData);
             txtHorario = itemView.findViewById(R.id.txtHorario);
             txtDuracao = itemView.findViewById(R.id.txtDuracao);
