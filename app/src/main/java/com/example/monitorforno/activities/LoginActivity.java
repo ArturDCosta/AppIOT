@@ -90,12 +90,27 @@ public class LoginActivity extends AppCompatActivity {
 
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponseDTO dados = response.body();
+                    // Mantive exatamente como estava no seu código original:
                     sessionManager.salvarSessao(dados.getToken(), dados.getId());
+
+                    Toast.makeText(LoginActivity.this, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show();
                     irParaMain();
-                } else if (response.code() == 401) {
-                    Toast.makeText(LoginActivity.this, "E-mail ou senha incorretos", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(LoginActivity.this, "Erro ao conectar. Tente novamente.", Toast.LENGTH_SHORT).show();
+                    // --- TRATAMENTO CORRETO DOS ERROS VIA CÓDIGO HTTP ---
+                    int codigoErro = response.code();
+                    Log.e("Login", "Erro da API. Código: " + codigoErro);
+
+                    if (codigoErro == 401) {
+                        Toast.makeText(LoginActivity.this, "Senha incorreta. Verifique os dados e tente novamente.", Toast.LENGTH_LONG).show();
+                    } else if (codigoErro == 404) {
+                        Toast.makeText(LoginActivity.this, "Esta conta não está cadastrada. Verifique o e-mail.", Toast.LENGTH_LONG).show();
+                    } else if (codigoErro == 400) {
+                        Toast.makeText(LoginActivity.this, "Dados inválidos. Verifique o formato do e-mail.", Toast.LENGTH_SHORT).show();
+                    } else if (codigoErro == 500) {
+                        Toast.makeText(LoginActivity.this, "O servidor está temporariamente indisponível. Tente novamente mais tarde.", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(LoginActivity.this, "Não foi possível realizar o login (Erro " + codigoErro + ").", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
 
@@ -103,7 +118,9 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(Call<LoginResponseDTO> call, Throwable t) {
                 btnEntrar.setEnabled(true);
                 btnEntrar.setText("Entrar");
-                Toast.makeText(LoginActivity.this, "Sem conexão com o servidor", Toast.LENGTH_SHORT).show();
+                Log.e("Login", "Falha física de rede: " + t.getMessage());
+
+                Toast.makeText(LoginActivity.this, "Falha na conexão. Verifique sua internet ou tente novamente.", Toast.LENGTH_LONG).show();
             }
         });
     }
