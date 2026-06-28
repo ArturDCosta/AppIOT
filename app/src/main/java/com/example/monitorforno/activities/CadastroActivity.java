@@ -75,6 +75,7 @@ public class CadastroActivity extends AppCompatActivity {
         String nome = edtNome.getText() != null ? edtNome.getText().toString().trim() : "";
         String email = edtEmail.getText() != null ? edtEmail.getText().toString().trim() : "";
         String senha = edtSenha.getText() != null ? edtSenha.getText().toString().trim() : "";
+        String regexSenha = "^(?=.*[A-Z])(?=.*\\d).{8,}$";
 
         // Validações básicas locais
         if (nome.isEmpty()) {
@@ -92,8 +93,8 @@ public class CadastroActivity extends AppCompatActivity {
             Toast.makeText(this, "Selecione a data de nascimento", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (senha.isEmpty() || senha.length() < 8) {
-            edtSenha.setError("A senha deve conter pelo menos 8 caracteres");
+        if (senha.isEmpty() || !senha.matches(regexSenha) ) {
+            edtSenha.setError("A senha deve conter 8 caracteres, 1 letra maiúscula e 1 número.");
             edtSenha.requestFocus();
             return;
         }

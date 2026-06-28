@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -13,32 +14,45 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MonitorForno"
         android:usesCleartextTraffic="true">
+
         <activity
             android:name=".activities.SplashActivity"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
 
         <activity
             android:name=".activities.LoginActivity"
             android:exported="false" />
-
         <activity
             android:name=".activities.CadastroActivity"
             android:exported="false" />
-
         <activity
             android:name=".activities.MainActivity"
             android:exported="false" />
-
         <activity
             android:name=".activities.DetalhesSessaoActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".activities.RedefinirSenhaActivity"
+            android:exported="true">
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="monitoramentoforno.com.br"
+                    android:path="/redefinir-senha" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

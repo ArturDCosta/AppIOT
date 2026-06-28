@@ -3,20 +3,22 @@ package com.example.monitorforno.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.monitorforno.R;
+import com.example.monitorforno.models.EsqueciSenhaDTO;
 import com.example.monitorforno.models.LoginRequestDTO;
 import com.example.monitorforno.models.LoginResponseDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -38,7 +40,6 @@ public class LoginActivity extends AppCompatActivity {
 
         sessionManager = new SessionManager(this);
 
-        // Se já está logado, vai direto para MainActivity
         if (sessionManager.estaLogado()) {
             irParaMain();
             return;
@@ -52,111 +53,123 @@ public class LoginActivity extends AppCompatActivity {
 
         btnEntrar.setOnClickListener(v -> tentarLogin());
 
-        txtEsqueciSenha.setOnClickListener(v -> {
-            // Implementar depois
-            Toast.makeText(this, "Em breve", Toast.LENGTH_SHORT).show();
-        });
+        // Clique no Esqueci a Senha
+        txtEsqueciSenha.setOnClickListener(v -> abrirDialogEsqueciSenha());
 
         txtCadastro.setOnClickListener(v -> {
-            // Implementar depois
             Intent intent = new Intent(LoginActivity.this, CadastroActivity.class);
             startActivity(intent);
         });
     }
 
     private void tentarLogin() {
-        String email = edtEmail.getText() != null
-                ? edtEmail.getText().toString().trim()
-                : "";
+        String email = edtEmail.getText() != null ? edtEmail.getText().toString().trim() : "";
+        String senha = edtSenha.getText() != null ? edtSenha.getText().toString().trim() : "";
 
-        String senha = edtSenha.getText() != null
-                ? edtSenha.getText().toString().trim()
-                : "";
-
-        // Validação local — antes de bater na API
         if (email.isEmpty()) {
             edtEmail.setError("Informe o e-mail");
             edtEmail.requestFocus();
             return;
         }
-
         if (senha.isEmpty()) {
             edtSenha.setError("Informe a senha");
             edtSenha.requestFocus();
             return;
         }
 
-        // Desabilita botão para evitar cliques duplos
         btnEntrar.setEnabled(false);
         btnEntrar.setText("Entrando...");
 
         LoginRequestDTO dto = new LoginRequestDTO(email, senha);
 
-        RetrofitClient.getApiService(this)
-                .login(dto)
-                .enqueue(new Callback<LoginResponseDTO>() {
+        RetrofitClient.getApiService(this).login(dto).enqueue(new Callback<LoginResponseDTO>() {
+            @Override
+            public void onResponse(Call<LoginResponseDTO> call, Response<LoginResponseDTO> response) {
+                btnEntrar.setEnabled(true);
+                btnEntrar.setText("Entrar");
 
-                    @Override
-                    public void onResponse(Call<LoginResponseDTO> call,
-                                           Response<LoginResponseDTO> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    LoginResponseDTO dados = response.body();
+                    sessionManager.salvarSessao(dados.getToken(), dados.getId());
+                    irParaMain();
+                } else if (response.code() == 401) {
+                    Toast.makeText(LoginActivity.this, "E-mail ou senha incorretos", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(LoginActivity.this, "Erro ao conectar. Tente novamente.", Toast.LENGTH_SHORT).show();
+                }
+            }
 
-                        // Reabilita botão independente do resultado
-                        btnEntrar.setEnabled(true);
-                        btnEntrar.setText("Entrar");
-
-                        if (response.isSuccessful() && response.body() != null) {
-
-                            LoginResponseDTO dados = response.body();
-
-                            // Salva token e ID do usuário
-                            sessionManager.salvarSessao(
-                                    dados.getToken(),
-                                    dados.getId()
-                            );
-
-                            irParaMain();
-
-                        } else if (response.code() == 401) {
-                            Toast.makeText(
-                                    LoginActivity.this,
-                                    "E-mail ou senha incorretos",
-                                    Toast.LENGTH_SHORT
-                            ).show();
-
-                        } else {
-                            Log.e("Login", "Erro inesperado: " + response.code());
-                            Toast.makeText(
-                                    LoginActivity.this,
-                                    "Erro ao conectar. Tente novamente.",
-                                    Toast.LENGTH_SHORT
-                            ).show();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<LoginResponseDTO> call, Throwable t) {
-                        btnEntrar.setEnabled(true);
-                        btnEntrar.setText("Entrar");
-
-                        Log.e("Login", "Falha: " + t.getMessage());
-
-                        Toast.makeText(
-                                LoginActivity.this,
-                                "Sem conexão com o servidor",
-                                Toast.LENGTH_SHORT
-                        ).show();
-                    }
-                });
+            @Override
+            public void onFailure(Call<LoginResponseDTO> call, Throwable t) {
+                btnEntrar.setEnabled(true);
+                btnEntrar.setText("Entrar");
+                Toast.makeText(LoginActivity.this, "Sem conexão com o servidor", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void irParaMain() {
         Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(
-                // Limpa a pilha — usuário não volta para o login com botão voltar
-                Intent.FLAG_ACTIVITY_NEW_TASK |
-                        Intent.FLAG_ACTIVITY_CLEAR_TASK
-        );
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    // --- MÉTODOS DO ESQUECI A SENHA ---
+
+    private void abrirDialogEsqueciSenha() {
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        builder.setTitle("Recuperar Senha");
+        builder.setMessage("Informe o e-mail cadastrado. Enviaremos um código (token) para redefinição.");
+
+        final android.widget.EditText inputEmail = new android.widget.EditText(this);
+        inputEmail.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        inputEmail.setHint("Digite seu e-mail");
+
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(60, 20, 60, 0);
+        layout.addView(inputEmail);
+        builder.setView(layout);
+
+        builder.setPositiveButton("Enviar Código", (dialog, which) -> {
+            String email = inputEmail.getText().toString().trim();
+            if (!email.isEmpty()) {
+                chamarApiRecuperacao(email);
+            } else {
+                Toast.makeText(this, "Por favor, insira um e-mail válido.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss());
+        builder.show();
+    }
+
+    private void chamarApiRecuperacao(String email) {
+        EsqueciSenhaDTO dto = new EsqueciSenhaDTO(email);
+
+        RetrofitClient.getApiService(this).solicitarRecuperacaoSenha(dto).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(LoginActivity.this, "E-mail enviado! Verifique sua caixa de entrada.", Toast.LENGTH_LONG).show();
+                    // Redireciona para a tela de colar o token
+                    Intent intent = new Intent(LoginActivity.this, RedefinirSenhaActivity.class);
+                    startActivity(intent);
+                } else {
+                    Log.e("RecuperarSenha", "Erro da API: " + response.code());
+                    if (response.code() == 500) {
+                        Toast.makeText(LoginActivity.this, "Erro no servidor de E-mail (Backend SMTP).", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(LoginActivity.this, "Erro. Verifique se o e-mail está cadastrado.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Toast.makeText(LoginActivity.this, "Sem conexão com o servidor.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

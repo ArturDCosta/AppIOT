@@ -5,6 +5,9 @@ import retrofit2.http.*;
 import java.util.List;
 import com.example.monitorforno.models.VincularFornoDTO;
 import com.example.monitorforno.models.FornoResponseDTO;
+import okhttp3.ResponseBody;
+import retrofit2.http.Body;
+import retrofit2.http.POST;
 
 public interface ApiService {
 
@@ -75,4 +78,10 @@ public interface ApiService {
     //alertas
     @GET("v1/eventos/forno/{fornoId}")
     Call<List<EventoDTO>> getAlertasDoForno(@Path("fornoId") String fornoId);
+
+    @POST("v1/auth/esqueci-minha-senha")
+    Call<ResponseBody> solicitarRecuperacaoSenha(@Body com.example.monitorforno.models.EsqueciSenhaDTO dto);
+
+    @POST("v1/auth/redefinir-senha")
+    Call<Void> redefinirSenha(@Body com.example.monitorforno.models.NovaSenhaDTO dto);
 }
