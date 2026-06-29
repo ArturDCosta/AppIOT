@@ -62,7 +62,6 @@
                     android:id="@+id/txtTempAtual"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="185°C"
                     android:textSize="42sp"
                     android:textColor="@color/white"
                     android:textStyle="bold"/>
@@ -129,7 +128,6 @@
                         android:id="@+id/txtUltimaTemperatura"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="184°C"
                         android:textSize="22sp"
                         android:textColor="@color/white"
                         android:textStyle="bold"/>
@@ -224,7 +222,6 @@
                     android:id="@+id/txtUltimaLeitura"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="19:44:32"
                     android:textSize="22sp"
                     android:textColor="@color/white"
                     android:textStyle="bold"/>

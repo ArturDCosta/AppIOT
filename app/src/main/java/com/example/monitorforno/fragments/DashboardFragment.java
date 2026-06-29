@@ -314,9 +314,28 @@ public class DashboardFragment extends Fragment {
     }
 
     private void configurarCliquesCards() {
-        View.OnClickListener abrirTemperatura = v -> getParentFragmentManager()
-                .beginTransaction().replace(R.id.fragment_container, new TemperaturaFragment())
-                .addToBackStack(null).commit();
+        View.OnClickListener abrirTemperatura = v -> {
+            // Como o seu adapter é de FornoResponseDTO, podemos pegar o item selecionado diretamente do Spinner!
+            if (spinnerFornos != null && spinnerFornos.getSelectedItem() != null) {
+                FornoResponseDTO fornoSelecionado = (FornoResponseDTO) spinnerFornos.getSelectedItem();
+                String idDoForno = fornoSelecionado.getId();
+
+                // Cria o fragmento passando o ID dinamicamente via Bundle
+                TemperaturaFragment fragment = new TemperaturaFragment();
+                Bundle args = new Bundle();
+                args.putString("FORNO_ID", idDoForno);
+                fragment.setArguments(args);
+
+                getParentFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, fragment)
+                        .addToBackStack(null)
+                        .commit();
+            } else {
+                Toast.makeText(requireContext(), "Por favor, selecione um forno primeiro.", Toast.LENGTH_SHORT).show();
+            }
+        };
+
         cardTemperaturaAtual.setOnClickListener(abrirTemperatura);
         cardUltimaTemperatura.setOnClickListener(abrirTemperatura);
     }

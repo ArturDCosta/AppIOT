@@ -63,8 +63,8 @@ public interface ApiService {
     @GET("v1/usuario/meu-perfil")
     Call<PerfilDTO> getMeuPerfil();
 
-    @GET("v1/temperaturas")
-    Call<List<TemperaturaDTO>> getHistoricoTemperaturas();
+    @GET("v1/temperaturas/forno/{fornoId}")
+    Call<List<TemperaturaDTO>> getHistoricoTemperaturas(@Path("fornoId") String fornoId);
 
     //============================
     //FORNOS
