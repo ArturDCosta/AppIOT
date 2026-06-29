@@ -63,7 +63,7 @@ public interface ApiService {
     @GET("v1/usuario/meu-perfil")
     Call<PerfilDTO> getMeuPerfil();
 
-    @GET("v1/temperaturas/forno/{fornoId}")
+    @GET("v1/temperaturas/fornos/{fornoId}")
     Call<List<TemperaturaDTO>> getHistoricoTemperaturas(@Path("fornoId") String fornoId);
 
     //============================
@@ -85,4 +85,22 @@ public interface ApiService {
 
     @POST("v1/auth/redefinir-senha")
     Call<Void> redefinirSenha(@Body com.example.monitorforno.models.NovaSenhaDTO dto);
+
+    @PUT("v1/usuario/alterar-senha")
+    Call<Void> alterarSenhaLogado(@Body com.example.monitorforno.models.AlterarSenhaDTO dto);
+
+    // ==========================================
+    // TEMPORIZADORES
+    // ==========================================
+
+    // A rota precisa do ID do forno e retorna Void
+    @POST("v1/temporizadores/forno/{fornoId}")
+    Call<Void> criarTemporizador(@Path("fornoId") String fornoId, @Body TemporizadorRequestDTO dto);
+
+    // A rota correta para o usuário logado é a /meus
+    @GET("v1/temporizadores/meus")
+    Call<List<TemporizadorResponseDTO>> getTemporizadores();
+
+    @DELETE("v1/temporizadores/{id}")
+    Call<Void> deletarTemporizador(@Path("id") String id);
 }

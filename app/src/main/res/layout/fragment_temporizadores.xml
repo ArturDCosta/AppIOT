@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -31,62 +30,54 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
                 android:orientation="vertical"
                 android:background="@color/card_dark"
                 android:padding="24dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSelecionarInicio"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:backgroundTint="@color/primary_green_dark"
                     android:textColor="@color/white"
-                    android:text="Próximo Temporizador"/>
+                    android:text="Selecionar Horário de Início"/>
 
                 <TextView
-                    android:id="@+id/txtProximoHorario"
+                    android:id="@+id/txtInicioSelecionado"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Nenhum"
-                    android:textSize="42sp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="16dp"
                     android:textColor="@color/white"
-                    android:textStyle="bold"/>
+                    android:text="Início: Não selecionado"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSelecionarFim"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:backgroundTint="@color/primary_green_dark"
+                    android:textColor="@color/white"
+                    android:text="Selecionar Horário de Fim"/>
 
                 <TextView
-                    android:id="@+id/txtTempoRestante"
+                    android:id="@+id/txtFimSelecionado"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
                     android:textColor="@color/white"
-                    android:text="Sem agendamentos"/>
+                    android:text="Fim: Não selecionado"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCriarTemporizador"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    app:backgroundTint="@color/primary_green_dark"
+                    android:textColor="@color/white"
+                    android:text="Criar Temporizador"/>
 
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSelecionarHorario"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:backgroundTint="@color/primary_green_dark"
-            android:textColor="@color/white"
-            android:text="Selecionar Horário"/>
-
-        <TextView
-            android:id="@+id/txtHorarioSelecionado"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:textColor="@color/white"
-            android:text="Nenhum horário selecionado"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCriarTemporizador"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:backgroundTint="@color/primary_green_dark"
-            android:textColor="@color/white"
-            android:text="Criar Temporizador"/>
 
         <TextView
             android:layout_width="wrap_content"
@@ -105,5 +96,4 @@
             android:layout_marginTop="12dp"/>
 
     </LinearLayout>
-
 </ScrollView>

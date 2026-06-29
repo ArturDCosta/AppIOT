@@ -165,15 +165,29 @@ public class TemperaturaFragment extends Fragment {
                     @Override
                     public void onResponse(Call<List<TemperaturaDTO>> call, Response<List<TemperaturaDTO>> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            exibirDadosNoGrafico(response.body());
+                            List<TemperaturaDTO> lista = response.body();
+                            if (!lista.isEmpty()) {
+                                exibirDadosNoGrafico(lista);
+                            } else {
+                                chart.setNoDataText("Nenhuma temperatura registrada no momento.");
+                                chart.clear();
+                                chart.invalidate();
+                            }
+                        } else if (response.code() == 404) {
+                            // SE CAIR AQUI: O backend confirmou que não tem dados no banco para esse forno!
+                            Log.d("DEBUG_GRAFICO", "O servidor retornou 404. Assumindo que não há dados no banco.");
+                            chart.setNoDataText("Ainda não há dados de temperatura para este forno.");
+                            chart.clear();
+                            chart.invalidate();
                         } else {
-                            Log.e("API_ERROR", "Erro no gráfico: " + response.code());
+                            Log.e("DEBUG_GRAFICO_ERRO", "Falha na API. Código: " + response.code());
+                            Toast.makeText(getContext(), "Erro no servidor: " + response.code(), Toast.LENGTH_SHORT).show();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<List<TemperaturaDTO>> call, Throwable t) {
-                        Log.e("API_FAILURE", "Falha de rede gráfico: " + t.getMessage());
+                        Log.e("DEBUG_GRAFICO_ERRO", "Falha de rede gráfico: " + t.getMessage());
                     }
                 });
     }
@@ -194,8 +208,15 @@ public class TemperaturaFragment extends Fragment {
                 entries.add(new Entry(i, temp.getTemperaturaAtual().floatValue()));
 
                 // ---> CORREÇÃO 2: Usando o formatarHora no gráfico!
-                horarios.add(formatarHora(temp.getRegistradoEm()));
+                horarios.add(temp.getHorarioFormatado());
             }
+        }
+
+        if (entries.isEmpty()) {
+            chart.setNoDataText("Dados de temperatura inválidos ou nulos.");
+            chart.clear();
+            chart.invalidate();
+            return;
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "Histórico");

@@ -38,52 +38,67 @@ public class EventoSessaoAdapter
         return new ViewHolder(view);
     }
 
+    @NonNull
     @Override
-    public void onBindViewHolder(
-            @NonNull ViewHolder holder,
-            int position) {
-
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         EventoSessao evento = eventos.get(position);
 
-        String descricao;
+        // 1. Pegamos a string original da API
+        String descricaoApi = evento.getDescricao();
 
-        switch (evento.getDescricao()) {
+        // 2. Se for nula, tratamos para evitar o NullPointerException no switch
+        if (descricaoApi == null) {
+            descricaoApi = "DESCONHECIDO";
+        }
 
+        String textoExibicao;
+
+        // 3. O switch agora avalia a variável tratada (nunca será nula)
+        switch (descricaoApi) {
             case "ALERTA_ENTRADA":
-                descricao = "Sistema entrou em alerta";
+                textoExibicao = "Sistema entrou em alerta";
                 holder.txtEvento.setTextColor(Color.parseColor("#fc9403"));
                 break;
 
             case "ALERTA_SAIDA":
-                descricao = "Sistema voltou ao normal";
+                textoExibicao = "Sistema voltou ao normal";
                 holder.txtEvento.setTextColor(Color.parseColor("#2426ab"));
                 break;
 
             case "CRITICO_ENTRADA":
-                descricao = "Estado crítico detectado";
+                textoExibicao = "Estado crítico detectado";
                 holder.txtEvento.setTextColor(Color.parseColor("#ed0909"));
                 break;
 
             case "CRITICO_SAIDA":
-                descricao = "Estado crítico encerrado";
+                textoExibicao = "Estado crítico encerrado";
                 holder.txtEvento.setTextColor(Color.parseColor("#32ad34"));
                 break;
 
             case "ERRO_SENSOR_ENTRADA":
-                descricao = "Falha no sensor";
+                textoExibicao = "Falha no sensor";
                 holder.txtEvento.setTextColor(Color.parseColor("#ebd915"));
                 break;
 
             case "ERRO_SENSOR_SAIDA":
-                descricao = "Sensor recuperado";
+                textoExibicao = "Sensor recuperado";
                 holder.txtEvento.setTextColor(Color.parseColor("#3c15eb"));
                 break;
 
+            case "DESCONHECIDO":
+                textoExibicao = "Evento não identificado";
+                holder.txtEvento.setTextColor(Color.GRAY);
+                break;
+
             default:
-                descricao = evento.getDescricao();
+                // Caso venha um texto que não mapeamos nos cases anteriores
+                textoExibicao = descricaoApi;
+                holder.txtEvento.setTextColor(Color.WHITE);
+                break;
         }
 
-        holder.txtEvento.setText(descricao);
+        // 4. Seta o texto final traduzido
+        holder.txtEvento.setText(textoExibicao);
     }
 
     @Override
