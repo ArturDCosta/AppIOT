@@ -72,6 +72,8 @@ public class HistoricoFragment extends Fragment {
                     Toast.makeText(requireContext(), "Nenhuma sessão encontrada.", Toast.LENGTH_SHORT).show();
                     calcularEstatisticasGlobais(null); // Zera a tela
                 }
+
+                Log.d("HISTORICO_API", "Tamanho da lista recebida: " + response.body().size());
             }
 
             @Override

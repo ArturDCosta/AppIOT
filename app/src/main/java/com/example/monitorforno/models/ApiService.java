@@ -79,6 +79,7 @@ public interface ApiService {
     @GET("v1/eventos/forno/{fornoId}")
     Call<List<EventoDTO>> getAlertasDoForno(@Path("fornoId") String fornoId);
 
+    //senha
     @POST("v1/auth/esqueci-minha-senha")
     Call<ResponseBody> solicitarRecuperacaoSenha(@Body com.example.monitorforno.models.EsqueciSenhaDTO dto);
 

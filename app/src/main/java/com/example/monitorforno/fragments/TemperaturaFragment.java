@@ -34,7 +34,7 @@ import retrofit2.Response;
 
 public class TemperaturaFragment extends Fragment {
 
-    // 1. ADICIONADOS: Componentes de texto que estavam faltando para as temperaturas
+    // 1. Componentes de texto para as temperaturas
     private TextView txtEstadoForno, txtEstadoSistema, txtUltimaLeitura;
     private TextView txtTemperaturaAtual, txtTemperaturaUltima;
     private LineChart chart;
@@ -55,7 +55,7 @@ public class TemperaturaFragment extends Fragment {
         chart = view.findViewById(R.id.chartTemperatura);
         btnVoltar = view.findViewById(R.id.btnVoltar);
 
-        // 2. CORREÇÃO: Inicializando os IDs do seu XML (Substitua pelos IDs reais do seu XML se forem diferentes)
+        // Inicializando os IDs do seu XML
         txtTemperaturaAtual = view.findViewById(R.id.txtTempAtual);
         txtTemperaturaUltima = view.findViewById(R.id.txtUltimaTemperatura);
 
@@ -140,9 +140,9 @@ public class TemperaturaFragment extends Fragment {
                                 txtEstadoSistema.setTextColor(Color.GRAY);
                             }
 
-                            txtUltimaLeitura.setText(telemetria.getAtualizadoEm());
+                            // ---> CORREÇÃO 1: Usando o formatarHora aqui!
+                            txtUltimaLeitura.setText(formatarHora(telemetria.getAtualizadoEm()));
 
-                            // 3. CORREÇÃO: Setando os valores numéricos capturados da API
                             if (txtTemperaturaAtual != null && telemetria.getTemperaturaAtual() != null) {
                                 txtTemperaturaAtual.setText(String.format("%.1f°C", telemetria.getTemperaturaAtual()));
                             }
@@ -180,7 +180,6 @@ public class TemperaturaFragment extends Fragment {
 
     private void exibirDadosNoGrafico(List<TemperaturaDTO> lista) {
         if (lista == null || lista.isEmpty()) {
-            // Se cair aqui, a API retornou uma lista vazia [] do banco de dados
             chart.setNoDataText("Nenhum dado de histórico encontrado para este forno.");
             chart.invalidate();
             return;
@@ -193,7 +192,9 @@ public class TemperaturaFragment extends Fragment {
             TemperaturaDTO temp = lista.get(i);
             if (temp.getTemperaturaAtual() != null) {
                 entries.add(new Entry(i, temp.getTemperaturaAtual().floatValue()));
-                horarios.add(temp.getRegistradoEm() != null ? temp.getRegistradoEm() : "");
+
+                // ---> CORREÇÃO 2: Usando o formatarHora no gráfico!
+                horarios.add(formatarHora(temp.getRegistradoEm()));
             }
         }
 
@@ -216,5 +217,23 @@ public class TemperaturaFragment extends Fragment {
         chart.getAxisRight().setEnabled(false);
         chart.getDescription().setEnabled(false);
         chart.invalidate();
+    }
+
+    // ---> CORREÇÃO 3: O método auxiliar que você tinha esquecido de copiar!
+    private String formatarHora(String dataIso) {
+        if (dataIso == null || !dataIso.contains("T")) {
+            return dataIso != null ? dataIso : "--:--:--";
+        }
+        try {
+            // Separa no "T" e pega a hora
+            String horaComMilissegundos = dataIso.split("T")[1];
+            // Garante que só vamos pegar "HH:mm:ss" (8 caracteres)
+            if (horaComMilissegundos.length() >= 8) {
+                return horaComMilissegundos.substring(0, 8);
+            }
+            return horaComMilissegundos;
+        } catch (Exception e) {
+            return dataIso;
+        }
     }
 }
