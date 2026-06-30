@@ -285,7 +285,15 @@ public class DashboardFragment extends Fragment {
     }
 
     private void abrirLeitorQrCode() {
-        GmsBarcodeScanner scanner = GmsBarcodeScanning.getClient(requireContext());
+        // 1. Configura o scanner EXCLUSIVAMENTE para QR Code
+        com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions options =
+                new com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions.Builder()
+                        .setBarcodeFormats(com.google.mlkit.vision.barcode.common.Barcode.FORMAT_QR_CODE)
+                        .build();
+
+        // 2. Inicia o cliente com as opções configuradas
+        GmsBarcodeScanner scanner = GmsBarcodeScanning.getClient(requireContext(), options);
+
         scanner.startScan()
                 .addOnSuccessListener(barcode -> {
                     String conteudo = barcode.getRawValue();
@@ -295,6 +303,13 @@ public class DashboardFragment extends Fragment {
                     } else {
                         Toast.makeText(requireContext(), "Formato de QR Code Inválido.", Toast.LENGTH_SHORT).show();
                     }
+                })
+                .addOnCanceledListener(() -> {
+                    Toast.makeText(requireContext(), "Leitura cancelada.", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("SCANNER_ERRO", "Falha ao abrir câmera: ", e);
+                    Toast.makeText(requireContext(), "Aguarde o download do módulo pelo Google Play e tente novamente.", Toast.LENGTH_LONG).show();
                 });
     }
 
