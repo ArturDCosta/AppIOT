@@ -13,6 +13,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -27,10 +28,10 @@ import com.example.monitorforno.models.FornoResponseDTO;
 import com.example.monitorforno.models.VincularFornoDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.utils.CustomDivisor;
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanner;
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,11 +53,28 @@ public class DashboardFragment extends Fragment {
     private MaterialButton btnEscaneadorQr;
     private List<FornoResponseDTO> listaDeFornosDoUsuario = new ArrayList<>();
 
+    // 1. OUVINTE DO ZXING PARA CAPTURAR O RESULTADO DO QR CODE
+    private final ActivityResultLauncher<ScanOptions> leitorDeQrCode = registerForActivityResult(
+            new ScanContract(),
+            result -> {
+                if (result.getContents() == null) {
+                    Toast.makeText(requireContext(), "Leitura cancelada", Toast.LENGTH_SHORT).show();
+                } else {
+                    String conteudo = result.getContents();
+                    if (conteudo != null && conteudo.contains(";")) {
+                        String[] partes = conteudo.split(";");
+                        enviarVinculoParaApi(partes[0].trim(), partes[1].trim());
+                    } else {
+                        Toast.makeText(requireContext(), "Formato de QR Code Inválido.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
-        // Mapeando componentes conforme IDs exatos do seu XML atualizado
+        // Mapeando componentes
         txtNomeForno = view.findViewById(R.id.txtNomeForno);
         txtSistema = view.findViewById(R.id.txtSistema);
         txtEstadoSistema = view.findViewById(R.id.txtEstadoSistema);
@@ -101,7 +119,6 @@ public class DashboardFragment extends Fragment {
                     if (!listaDeFornosDoUsuario.isEmpty()) {
                         configurarSpinnerFornos();
                     } else {
-                        // Se a lista vier vazia, limpa a tela e avisa o usuário
                         vincularDadosNaTela(null, "Nenhum Forno");
                         Toast.makeText(requireContext(), "Escaneie o QR Code do forno para começar!", Toast.LENGTH_LONG).show();
                     }
@@ -123,7 +140,7 @@ public class DashboardFragment extends Fragment {
         spinnerFornos.setAdapter(adapter);
 
         String idSalvo = sessionManager.getFornoSelecionadoId();
-        int posicaoParaSelecionar = 0; // Padrão é o primeiro se não achar nada
+        int posicaoParaSelecionar = 0;
 
         if (idSalvo != null) {
             for (int i = 0; i < listaDeFornosDoUsuario.size(); i++) {
@@ -133,18 +150,13 @@ public class DashboardFragment extends Fragment {
                 }
             }
         }
-        // Força o spinner a apontar para a posição correta antes do usuário interagir
         spinnerFornos.setSelection(posicaoParaSelecionar);
 
         spinnerFornos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 FornoResponseDTO fornoSelecionado = listaDeFornosDoUsuario.get(position);
-
-                // GRAVA NA SESSÃO: Toda vez que o usuário mudar o seletor, salvamos no SharedPreferences
                 sessionManager.salvarFornoSelecionado(fornoSelecionado.getId());
-
-                // 100% API: Carrega as telemetrias e os alertas
                 carregarDadosDoDashboard(fornoSelecionado.getId(), fornoSelecionado.getNome());
                 carregarAlertasReaisNoDashboard(fornoSelecionado.getId());
             }
@@ -162,14 +174,12 @@ public class DashboardFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     vincularDadosNaTela(response.body(), nomeForno);
                 } else {
-                    // Se a requisição falhar ou retornar corpo vazio, assume-se forno offline/desligado
                     vincularDadosNaTela(null, nomeForno);
                 }
             }
 
             @Override
             public void onFailure(Call<DashboardDTO> call, Throwable t) {
-                // Falha de rede trata como offline mantendo o nome do forno selecionado
                 vincularDadosNaTela(null, nomeForno);
             }
         });
@@ -183,36 +193,28 @@ public class DashboardFragment extends Fragment {
             public void onResponse(@NonNull Call<List<EventoDTO>> call, @NonNull Response<List<EventoDTO>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<EventoDTO> todosEventos = response.body();
-
-                    // Pega apenas os 3 alertas mais recentes para o Dashboard
                     List<EventoDTO> ultimosEventos;
                     if (todosEventos.size() > 3) {
                         ultimosEventos = todosEventos.subList(0, 3);
                     } else {
                         ultimosEventos = todosEventos;
                     }
-
-                    // Joga os dados reais no Adapter
                     recyclerAlertas.setAdapter(new EventoAdapter(ultimosEventos));
                 } else {
-                    // Limpa a lista caso não tenha dados (sem fakes)
                     recyclerAlertas.setAdapter(new EventoAdapter(new ArrayList<>()));
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<List<EventoDTO>> call, @NonNull Throwable t) {
-                // Limpa a lista em caso de falha de conexão
                 recyclerAlertas.setAdapter(new EventoAdapter(new ArrayList<>()));
             }
         });
     }
 
     private void vincularDadosNaTela(DashboardDTO dados, String nomeForno) {
-        // 1. Vincula o nome vindo do seletor da API
         txtNomeForno.setText(nomeForno != null ? nomeForno : "--");
 
-        // Caso o objeto de telemetria seja inteiramente nulo (Forno Desligado / Sem dados)
         if (dados == null) {
             txtTemperaturaAtual.setText("--");
             txtAtual.setText("--");
@@ -228,14 +230,12 @@ public class DashboardFragment extends Fragment {
             return;
         }
 
-        // Temperaturas
         String tempAtualTexto = dados.getTemperaturaAtual() != null ? Math.round(dados.getTemperaturaAtual()) + "°C" : "--";
         String tempUltimaTexto = dados.getTemperaturaUltima() != null ? Math.round(dados.getTemperaturaUltima()) + "°C" : "--";
         txtTemperaturaAtual.setText(tempAtualTexto);
         txtAtual.setText(tempAtualTexto);
         txtUltima.setText(tempUltimaTexto);
 
-        // Tempo Ligado
         if (dados.getTempoLigadoMinutos() != null) {
             long totalMinutos = dados.getTempoLigadoMinutos();
             long horas = totalMinutos / 60;
@@ -245,10 +245,8 @@ public class DashboardFragment extends Fragment {
             txtTempoLigado.setText("--");
         }
 
-        // Temporizador
         txtTemporizador.setText(dados.getProximoTemporizador() != null ? formatarTemporizador(dados.getProximoTemporizador()) : "--");
 
-        // Status do Sistema
         String estadoSistema = dados.getEstadoSistema() != null ? dados.getEstadoSistema() : "--";
         txtSistema.setText(estadoSistema);
         txtEstadoSistema.setText(estadoSistema);
@@ -263,7 +261,6 @@ public class DashboardFragment extends Fragment {
             txtEstadoSistema.setTextColor(Color.GRAY);
         }
 
-        // Status do Forno
         String estadoForno = dados.getEstadoForno() != null ? dados.getEstadoForno() : "FORNO_DESLIGADO";
         txtEstadoForno.setText(estadoForno.replace("_", " "));
 
@@ -284,33 +281,19 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    // 2. NOVA FUNÇÃO QUE ABRE O SCANNER DO ZXING
     private void abrirLeitorQrCode() {
-        // 1. Configura o scanner EXCLUSIVAMENTE para QR Code
-        com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions options =
-                new com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions.Builder()
-                        .setBarcodeFormats(com.google.mlkit.vision.barcode.common.Barcode.FORMAT_QR_CODE)
-                        .build();
+        ScanOptions options = new ScanOptions();
+        options.setPrompt("Aponte para o QR Code do forno");
+        options.setBeepEnabled(true);
 
-        // 2. Inicia o cliente com as opções configuradas
-        GmsBarcodeScanner scanner = GmsBarcodeScanning.getClient(requireContext(), options);
+        // 1. Mude para true para impedir que a tela gire se o usuário deitar o celular
+        options.setOrientationLocked(true);
 
-        scanner.startScan()
-                .addOnSuccessListener(barcode -> {
-                    String conteudo = barcode.getRawValue();
-                    if (conteudo != null && conteudo.contains(";")) {
-                        String[] partes = conteudo.split(";");
-                        enviarVinculoParaApi(partes[0].trim(), partes[1].trim());
-                    } else {
-                        Toast.makeText(requireContext(), "Formato de QR Code Inválido.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnCanceledListener(() -> {
-                    Toast.makeText(requireContext(), "Leitura cancelada.", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("SCANNER_ERRO", "Falha ao abrir câmera: ", e);
-                    Toast.makeText(requireContext(), "Aguarde o download do módulo pelo Google Play e tente novamente.", Toast.LENGTH_LONG).show();
-                });
+        // 2. Chame a SUA nova classe, e não a padrão do ZXing!
+        options.setCaptureActivity(com.example.monitorforno.activities.CustomScannerActivity.class);
+
+        leitorDeQrCode.launch(options);
     }
 
     private void enviarVinculoParaApi(String serial, String pin) {
@@ -330,12 +313,10 @@ public class DashboardFragment extends Fragment {
 
     private void configurarCliquesCards() {
         View.OnClickListener abrirTemperatura = v -> {
-            // Como o seu adapter é de FornoResponseDTO, podemos pegar o item selecionado diretamente do Spinner!
             if (spinnerFornos != null && spinnerFornos.getSelectedItem() != null) {
                 FornoResponseDTO fornoSelecionado = (FornoResponseDTO) spinnerFornos.getSelectedItem();
                 String idDoForno = fornoSelecionado.getId();
 
-                // Cria o fragmento passando o ID dinamicamente via Bundle
                 TemperaturaFragment fragment = new TemperaturaFragment();
                 Bundle args = new Bundle();
                 args.putString("FORNO_ID", idDoForno);
@@ -361,12 +342,10 @@ public class DashboardFragment extends Fragment {
         }
 
         try {
-            // 1. Descobre a hora atual do celular (Hora de Início)
             java.util.Calendar calendar = java.util.Calendar.getInstance();
             java.text.SimpleDateFormat formatoHora = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
             String horaInicio = formatoHora.format(calendar.getTime());
 
-            // 2. Formata a data que veio do backend (Hora de Fim e o Dia)
             String dataLimpa = dataIso.split("\\.")[0];
             java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault());
             java.util.Date dataFimObj = formatoEntrada.parse(dataLimpa);
@@ -377,7 +356,6 @@ public class DashboardFragment extends Fragment {
             String horaFim = formatoHoraFim.format(dataFimObj);
             String diaFim = formatoDia.format(dataFimObj);
 
-            // Retorna no formato solicitado: Inicio às Fim - Dia
             return horaInicio + " às " + horaFim + " - " + diaFim;
 
         } catch (Exception e) {
