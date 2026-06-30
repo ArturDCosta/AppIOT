@@ -1,13 +1,18 @@
 package com.example.monitorforno.models;
 
+import com.google.gson.annotations.SerializedName;
+
 public class EventoDTO {
     private String id;
-    private String tipo; // Ex: "ALERTA_ENTRADA", "CRITICO_ENTRADA"
-    private String horario;
-    private String data; // Opcional, mas bom ter
+    private String tipo;
+
+    // Diz ao Gson para mapear a chave "criadoEm" da API para esta variável
+    @SerializedName("criadoEm")
+    private String criadoEm;
+
+    // Se a API não envia fornoId, isso ficará nulo. Se não for usar na tela, pode remover.
     private String fornoId;
 
-    // Construtor vazio para o Retrofit
     public EventoDTO() {}
 
     public String getId() { return id; }
@@ -16,11 +21,8 @@ public class EventoDTO {
     public String getTipo() { return tipo; }
     public void setTipo(String tipo) { this.tipo = tipo; }
 
-    public String getHorario() { return horario; }
-    public void setHorario(String horario) { this.horario = horario; }
-
-    public String getData() { return data; }
-    public void setData(String data) { this.data = data; }
+    public String getCriadoEm() { return criadoEm; }
+    public void setCriadoEm(String criadoEm) { this.criadoEm = criadoEm; }
 
     public String getFornoId() { return fornoId; }
     public void setFornoId(String fornoId) { this.fornoId = fornoId; }

@@ -60,9 +60,31 @@ public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.EventoView
         }
 
         holder.txtTipoEvento.setText(descricaoExibicao);
-        holder.txtHorarioEvento.setText(evento.getHorario() != null ? evento.getHorario() : "--:--");
 
-        // Cores
+        // =========================================================================
+        // CORREÇÃO: Tratando o campo criadoEm que vem do LocalDateTime do Spring
+        // =========================================================================
+        String dataOriginal = evento.getCriadoEm();
+        String horarioExibicao = "--:--";
+
+        if (dataOriginal != null) {
+            if (dataOriginal.contains("T")) {
+                try {
+                    // Separa "2026-06-30T14:45:00" em ["2026-06-30", "14:45:00"]
+                    String[] partes = dataOriginal.split("T");
+                    // Pega apenas os 5 primeiros caracteres do horário ("14:45")
+                    horarioExibicao = partes[1].substring(0, 5);
+                } catch (Exception e) {
+                    horarioExibicao = dataOriginal; // Fallback caso a string venha diferente
+                }
+            } else {
+                horarioExibicao = dataOriginal;
+            }
+        }
+        holder.txtHorarioEvento.setText(horarioExibicao);
+        // =========================================================================
+
+        // Configuração de Cores (Mantida a sua lógica original perfeita)
         if (descricaoExibicao.equals("Sistema entrou em alerta")) {
             holder.txtTipoEvento.setTextColor(holder.itemView.getContext().getColor(R.color.alerta_laranja));
         } else if (descricaoExibicao.equals("Estado crítico detectado") || descricaoExibicao.equals("Estado crítico")) {

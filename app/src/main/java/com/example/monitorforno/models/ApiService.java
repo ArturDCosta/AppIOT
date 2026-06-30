@@ -76,7 +76,7 @@ public interface ApiService {
     Call<List<FornoResponseDTO>> buscarMeusFornos();
 
     //alertas
-    @GET("v1/eventos/forno/{fornoId}")
+    @GET("v1/eventos/fornos/{fornoId}")
     Call<List<EventoDTO>> getAlertasDoForno(@Path("fornoId") String fornoId);
 
     //senha

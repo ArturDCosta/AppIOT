@@ -99,7 +99,16 @@ public class AlertasFragment extends Fragment {
 
         int countAlertas = 0;
         int countCriticos = 0;
-        String horarioUltimo = eventos.get(0).getHorario(); // Assumindo que a API manda o mais recente primeiro
+
+        // Pega o criadoEm da API no lugar do antigo getHorario()
+        String dataHoraUltimo = eventos.get(0).getCriadoEm();
+
+        // Opcional: Para formatar e remover o "T" da data/hora que vem do LocalDateTime
+        if (dataHoraUltimo != null && dataHoraUltimo.contains("T")) {
+            // Separa apenas a hora (HH:mm:ss) ou formata como preferir
+            String[] partes = dataHoraUltimo.split("T");
+            dataHoraUltimo = partes[1].substring(0, 5); // Pega apenas HH:mm
+        }
 
         for (EventoDTO evento : eventos) {
             if (evento.getTipo() != null) {
@@ -113,7 +122,7 @@ public class AlertasFragment extends Fragment {
 
         txtTotalAlertas.setText("Total de Alertas: " + countAlertas);
         txtTotalCriticos.setText("Eventos Críticos: " + countCriticos);
-        txtUltimoEvento.setText("Último Evento: " + (horarioUltimo != null ? horarioUltimo : "--:--"));
+        txtUltimoEvento.setText("Último Evento: " + (dataHoraUltimo != null ? dataHoraUltimo : "--:--"));
     }
 
     private void atualizarEstatisticasVazias() {
