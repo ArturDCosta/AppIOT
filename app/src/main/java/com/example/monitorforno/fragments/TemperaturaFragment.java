@@ -107,20 +107,20 @@ public class TemperaturaFragment extends Fragment {
 
                             switch (estadoForno) {
                                 case "FORNO_AQUECENDO":
-                                    txtEstadoForno.setText("FORNO AQUECENDO");
+                                    txtEstadoForno.setText("AQUECENDO");
                                     txtEstadoForno.setTextColor(getResources().getColor(R.color.forno_aquecendo));
                                     break;
                                 case "FORNO_ATIVO":
-                                    txtEstadoForno.setText("FORNO ATIVO");
+                                    txtEstadoForno.setText("ATIVO");
                                     txtEstadoForno.setTextColor(getResources().getColor(R.color.forno_ativo));
                                     break;
                                 case "FORNO_ESFRIANDO":
-                                    txtEstadoForno.setText("FORNO ESFRIANDO");
+                                    txtEstadoForno.setText("ESFRIANDO");
                                     txtEstadoForno.setTextColor(getResources().getColor(R.color.forno_esfriando));
                                     break;
                                 default:
                                 case "FORNO_DESLIGADO":
-                                    txtEstadoForno.setText("FORNO DESLIGADO");
+                                    txtEstadoForno.setText("DESLIGADO");
                                     txtEstadoForno.setTextColor(getResources().getColor(R.color.forno_desligado));
                                     break;
                             }

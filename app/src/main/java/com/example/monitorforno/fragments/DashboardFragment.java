@@ -246,7 +246,7 @@ public class DashboardFragment extends Fragment {
         }
 
         // Temporizador
-        txtTemporizador.setText(dados.getProximoTemporizador() != null ? dados.getProximoTemporizador() : "--");
+        txtTemporizador.setText(dados.getProximoTemporizador() != null ? formatarTemporizador(dados.getProximoTemporizador()) : "--");
 
         // Status do Sistema
         String estadoSistema = dados.getEstadoSistema() != null ? dados.getEstadoSistema() : "--";
@@ -338,5 +338,36 @@ public class DashboardFragment extends Fragment {
 
         cardTemperaturaAtual.setOnClickListener(abrirTemperatura);
         cardUltimaTemperatura.setOnClickListener(abrirTemperatura);
+    }
+
+    private String formatarTemporizador(String dataIso) {
+        if (dataIso == null || !dataIso.contains("T")) {
+            return dataIso;
+        }
+
+        try {
+            // 1. Descobre a hora atual do celular (Hora de Início)
+            java.util.Calendar calendar = java.util.Calendar.getInstance();
+            java.text.SimpleDateFormat formatoHora = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
+            String horaInicio = formatoHora.format(calendar.getTime());
+
+            // 2. Formata a data que veio do backend (Hora de Fim e o Dia)
+            String dataLimpa = dataIso.split("\\.")[0];
+            java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault());
+            java.util.Date dataFimObj = formatoEntrada.parse(dataLimpa);
+
+            java.text.SimpleDateFormat formatoHoraFim = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
+            java.text.SimpleDateFormat formatoDia = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
+
+            String horaFim = formatoHoraFim.format(dataFimObj);
+            String diaFim = formatoDia.format(dataFimObj);
+
+            // Retorna no formato solicitado: Inicio às Fim - Dia
+            return horaInicio + " às " + horaFim + " - " + diaFim;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return dataIso;
+        }
     }
 }
