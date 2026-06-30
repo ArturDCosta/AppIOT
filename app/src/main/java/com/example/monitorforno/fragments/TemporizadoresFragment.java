@@ -2,6 +2,7 @@ package com.example.monitorforno.fragments;
 
 import android.app.TimePickerDialog;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,9 +21,11 @@ import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -35,14 +38,22 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
 
     private String horaInicioSelecionada;
     private String horaFimSelecionada;
-
     private int ano, mes, dia;
+
+    // Novos componentes para o destaque e auto-exclusão
+    private View cardProximoTemporizador;
+    private TextView txtProximoTempo;
+    private final Handler handlerMonitor = new Handler();
+    private Runnable runnableMonitor;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_temporizadores, container, false);
 
         SessionManager sessionManager = new SessionManager(requireContext());
+
+        cardProximoTemporizador = view.findViewById(R.id.cardProximoTemporizador);
+        txtProximoTempo = view.findViewById(R.id.txtProximoTempo);
 
         MaterialButton btnSelecionarInicio = view.findViewById(R.id.btnSelecionarInicio);
         MaterialButton btnSelecionarFim = view.findViewById(R.id.btnSelecionarFim);
@@ -64,7 +75,7 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
 
         btnSelecionarInicio.setOnClickListener(v -> {
             TimePickerDialog dialog = new TimePickerDialog(getContext(), (view1, hourOfDay, minute) -> {
-                horaInicioSelecionada = String.format("%02d:%02d:00", hourOfDay, minute);
+                horaInicioSelecionada = String.format(Locale.getDefault(), "%02d:%02d:00", hourOfDay, minute);
                 txtInicioSelecionado.setText("Início: " + horaInicioSelecionada.substring(0,5));
             }, 12, 0, true);
             dialog.show();
@@ -75,25 +86,16 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
             int mesAtual = c.get(Calendar.MONTH);
             int diaAtual = c.get(Calendar.DAY_OF_MONTH);
 
-            // 1. Abre primeiro o Calendário (DatePicker)
             new android.app.DatePickerDialog(getContext(), (view1, year, month, dayOfMonth) -> {
-
-                // Salva a data escolhida nas variáveis globais
                 ano = year;
-                mes = month + 1; // No Java, Janeiro é 0, então somamos 1
+                mes = month + 1;
                 dia = dayOfMonth;
 
-                // 2. Quando escolher o dia, abre imediatamente o Relógio (TimePicker)
                 new android.app.TimePickerDialog(getContext(), (view2, hourOfDay, minute) -> {
-
-                    horaFimSelecionada = String.format("%02d:%02d:00", hourOfDay, minute);
-
-                    // Mostra na tela a data e hora formatada (Ex: Fim: 25/12/2026 às 14:30)
-                    String textoExibicao = String.format("Fim: %02d/%02d/%04d às %02d:%02d", dia, mes, ano, hourOfDay, minute);
+                    horaFimSelecionada = String.format(Locale.getDefault(), "%02d:%02d:00", hourOfDay, minute);
+                    String textoExibicao = String.format(Locale.getDefault(), "Fim: %02d/%02d/%04d às %02d:%02d", dia, mes, ano, hourOfDay, minute);
                     txtFimSelecionado.setText(textoExibicao);
-
                 }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show();
-
             }, anoAtual, mesAtual, diaAtual).show();
         });
 
@@ -103,25 +105,20 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
                 return;
             }
 
-            // Puxa o ID do forno salvo na sessão
             String fornoId = sessionManager.getFornoSelecionadoId();
-
-            // Verifica se o ID realmente existe (se o usuário selecionou um forno no dashboard)
             if (fornoId == null || fornoId.isEmpty()) {
                 Toast.makeText(getContext(), "Nenhum forno selecionado. Volte ao Dashboard e selecione um forno.", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            String isoHorarioFim = String.format("%04d-%02d-%02dT%s", ano, mes, dia, horaFimSelecionada);
+            String isoHorarioFim = String.format(Locale.getDefault(), "%04d-%02d-%02dT%s", ano, mes, dia, horaFimSelecionada);
             TemporizadorRequestDTO request = new TemporizadorRequestDTO(isoHorarioFim);
 
-            // Chamando a API passando o fornoId real
             RetrofitClient.getApiService(getContext()).criarTemporizador(fornoId, request).enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
                     if (response.isSuccessful()) {
                         Toast.makeText(getContext(), "Temporizador Criado!", Toast.LENGTH_SHORT).show();
-
                         carregarTemporizadoresDaApi();
 
                         horaInicioSelecionada = null;
@@ -132,7 +129,6 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
                         Toast.makeText(getContext(), "Erro ao salvar: " + response.code(), Toast.LENGTH_SHORT).show();
                     }
                 }
-
                 @Override
                 public void onFailure(Call<Void> call, Throwable t) {
                     Toast.makeText(getContext(), "Falha na rede: " + t.getMessage(), Toast.LENGTH_SHORT).show();
@@ -140,13 +136,33 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
             });
         });
 
+        // Configura o Monitor que vai rodar de tempos em tempos
+        runnableMonitor = new Runnable() {
+            @Override
+            public void run() {
+                verificarTemporizadoresExpirados();
+                handlerMonitor.postDelayed(this, 5000); // Roda a cada 5 segundos
+            }
+        };
+
         carregarTemporizadoresDaApi();
 
         return view;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        handlerMonitor.post(runnableMonitor); // Liga o monitor
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        handlerMonitor.removeCallbacks(runnableMonitor); // Desliga para economizar bateria
+    }
+
     private void carregarTemporizadoresDaApi() {
-        // Chamando a API no padrão do seu projeto
         RetrofitClient.getApiService(getContext()).getTemporizadores().enqueue(new Callback<List<TemporizadorResponseDTO>>() {
             @Override
             public void onResponse(Call<List<TemporizadorResponseDTO>> call, Response<List<TemporizadorResponseDTO>> response) {
@@ -154,15 +170,93 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
                     temporizadores.clear();
                     temporizadores.addAll(response.body());
                     adapter.notifyDataSetChanged();
-                }
-            }
 
-            @Override
-            public void onFailure(Call<List<TemporizadorResponseDTO>> call, Throwable t) {
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), "Erro ao buscar temporizadores", Toast.LENGTH_SHORT).show();
+                    // Logo após carregar, já checa quem é o próximo e exibe
+                    verificarTemporizadoresExpirados();
                 }
             }
+            @Override
+            public void onFailure(Call<List<TemporizadorResponseDTO>> call, Throwable t) {}
+        });
+    }
+
+    private void verificarTemporizadoresExpirados() {
+        if (temporizadores.isEmpty()) {
+            txtProximoTempo.setText("Sem temporizadores\nmarcados");
+            txtProximoTempo.setTextSize(22f); // Fonte um pouco menor para o texto caber bem
+            return;
+        }
+
+        TemporizadorResponseDTO proximo = null;
+        long menorTempoRestante = Long.MAX_VALUE;
+        long agora = System.currentTimeMillis();
+
+        SimpleDateFormat sdfEntrada = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+        List<TemporizadorResponseDTO> listaExpirados = new ArrayList<>();
+
+        for (TemporizadorResponseDTO t : temporizadores) {
+            try {
+                String horaFimStr = t.getHorarioFim();
+                if (horaFimStr == null) continue;
+
+                String dataLimpa = horaFimStr.split("\\.")[0];
+                java.util.Date dataFim = sdfEntrada.parse(dataLimpa);
+
+                if (dataFim != null) {
+                    long tempoFim = dataFim.getTime();
+
+                    if (tempoFim <= agora) {
+                        listaExpirados.add(t);
+                    } else {
+                        long diff = tempoFim - agora;
+                        if (diff < menorTempoRestante) {
+                            menorTempoRestante = diff;
+                            proximo = t;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Auto-exclusão silenciosa
+        for (TemporizadorResponseDTO exp : listaExpirados) {
+            temporizadores.remove(exp);
+            excluirTemporizadorAutomaticamente(String.valueOf(exp.getId()));
+        }
+
+        if (!listaExpirados.isEmpty()) {
+            adapter.notifyDataSetChanged();
+        }
+
+        // EXIBIR O PRÓXIMO OU A MENSAGEM VAZIA
+        if (proximo != null) {
+            try {
+                String dataLimpa = proximo.getHorarioFim().split("\\.")[0];
+                java.util.Date dataFimObj = sdfEntrada.parse(dataLimpa);
+
+                SimpleDateFormat formatoVisor = new SimpleDateFormat("HH:mm\ndd/MM/yyyy", Locale.getDefault());
+                txtProximoTempo.setText(formatoVisor.format(dataFimObj));
+                txtProximoTempo.setTextSize(36f); // Fonte bem grande para a hora/data
+            } catch (Exception e) {
+                txtProximoTempo.setText(proximo.getHorarioFim());
+            }
+        } else {
+            // Se existiam itens na lista, mas todos expiraram agora
+            txtProximoTempo.setText("Sem temporizadores\nmarcados");
+            txtProximoTempo.setTextSize(22f);
+        }
+    }
+
+    private void excluirTemporizadorAutomaticamente(String id) {
+        RetrofitClient.getApiService(getContext()).deletarTemporizador(id).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                // Excluído do banco silenciosamente
+            }
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {}
         });
     }
 
@@ -170,7 +264,6 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
     public void onTemporizadorRemovido(String id, int position) {
         if (id == null) return;
 
-        // Chamando a API no padrão do seu projeto
         RetrofitClient.getApiService(getContext()).deletarTemporizador(id).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
@@ -178,7 +271,10 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
                     temporizadores.remove(position);
                     adapter.notifyItemRemoved(position);
                     adapter.notifyItemRangeChanged(position, temporizadores.size());
-                    Toast.makeText(getContext(), "Temporizador removido", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Temporizador cancelado", Toast.LENGTH_SHORT).show();
+
+                    // Recalcula o card grande caso o usuário tenha excluído justamente o próximo
+                    verificarTemporizadoresExpirados();
                 } else {
                     Toast.makeText(getContext(), "Erro ao remover", Toast.LENGTH_SHORT).show();
                 }
