@@ -207,8 +207,13 @@ public class TemperaturaFragment extends Fragment {
             if (temp.getTemperaturaAtual() != null) {
                 entries.add(new Entry(i, temp.getTemperaturaAtual().floatValue()));
 
-                // ---> CORREÇÃO 2: Usando o formatarHora no gráfico!
-                horarios.add(temp.getHorarioFormatado());
+                // Pegamos a hora (ex: "19:19:50") e cortamos para "19:19"
+                String horaCompleta = temp.getHorarioFormatado();
+                String horaSemSegundos = (horaCompleta != null && horaCompleta.length() >= 5)
+                        ? horaCompleta.substring(0, 5)
+                        : horaCompleta;
+
+                horarios.add(horaSemSegundos);
             }
         }
 
@@ -236,7 +241,14 @@ public class TemperaturaFragment extends Fragment {
 
         chart.getAxisLeft().setTextColor(Color.WHITE);
         chart.getAxisRight().setEnabled(false);
+
+        // Remove a legenda do gráfico (bolinha com texto "Histórico")
+        chart.getLegend().setEnabled(false);
+
+        // Remove descrições extras do gráfico
         chart.getDescription().setEnabled(false);
+
+        // Atualiza a tela
         chart.invalidate();
     }
 
@@ -256,5 +268,12 @@ public class TemperaturaFragment extends Fragment {
         } catch (Exception e) {
             return dataIso;
         }
+    }
+
+    private String formatarHoraSemSegundos(String horaCompleta) {
+        if (horaCompleta == null || horaCompleta.length() < 5) return "";
+        // Se o formato tiver segundos (ex: 19:19:50, que tem 8 caracteres),
+        // pegamos apenas os primeiros 5 caracteres (19:19)
+        return horaCompleta.length() >= 5 ? horaCompleta.substring(0, 5) : horaCompleta;
     }
 }

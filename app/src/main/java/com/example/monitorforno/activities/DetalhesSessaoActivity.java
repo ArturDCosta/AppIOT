@@ -114,19 +114,19 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal() : "FORNO_DESLIGADO";
         switch (estado) {
             case "FORNO_ATIVO":
-                txtEstadoFinal.setText("Forno Ativo");
+                txtEstadoFinal.setText("Ativo");
                 txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_ativo));
                 break;
             case "FORNO_AQUECENDO":
-                txtEstadoFinal.setText("Forno Aquecendo");
+                txtEstadoFinal.setText("Aquecendo");
                 txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_aquecendo));
                 break;
             case "FORNO_ESFRIANDO":
-                txtEstadoFinal.setText("Forno Esfriando");
+                txtEstadoFinal.setText("Esfriando");
                 txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_esfriando));
                 break;
             default:
-                txtEstadoFinal.setText("Forno Desligado");
+                txtEstadoFinal.setText("Desligado");
                 txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_desligado));
                 break;
         }
@@ -156,7 +156,14 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
             chart.invalidate();
             return;
         }
-        configurarGrafico(valores, horarios);
+
+        // Formata a lista de horários para remover os segundos antes de ir para o gráfico
+        List<String> horariosFormatados = new ArrayList<>();
+        for (String hora : horarios) {
+            horariosFormatados.add(formatarHoraSemSegundos(hora));
+        }
+
+        configurarGrafico(valores, horariosFormatados);
     }
 
     private void configurarGrafico(List<Float> valores, List<String> horarios) {
@@ -165,44 +172,41 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
             entries.add(new Entry(i, valores.get(i)));
         }
 
-        LineDataSet dataSet = new LineDataSet(entries, "Temperatura (C°)");
-        dataSet.setLineWidth(3f);
-        dataSet.setCircleRadius(4f);
-        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-        dataSet.setDrawValues(false);
+        // Configurações idênticas ao do TemperaturaFragment
+        LineDataSet dataSet = new LineDataSet(entries, "Histórico");
         dataSet.setColor(Color.parseColor("#fc9403"));
         dataSet.setCircleColor(Color.parseColor("#fc9403"));
+        dataSet.setLineWidth(2f);
+        dataSet.setValueTextColor(Color.WHITE);
+
+        LineData lineData = new LineData(dataSet);
+        chart.setData(lineData);
 
         XAxis eixoX = chart.getXAxis();
         eixoX.setPosition(XAxis.XAxisPosition.BOTTOM);
         eixoX.setGranularity(1f);
-        eixoX.setLabelCount(horarios.size(), true);
         eixoX.setValueFormatter(new IndexAxisValueFormatter(horarios));
         eixoX.setTextColor(Color.WHITE);
-        eixoX.setTextSize(10f);
-        eixoX.setDrawGridLines(false);
 
+        // Limpa formatações antigas do eixo Y (como limite, min/max e cor)
         chart.getAxisLeft().setTextColor(Color.WHITE);
-        chart.getAxisLeft().setTextSize(10f);
-        chart.getAxisLeft().setDrawGridLines(true);
-        chart.getAxisLeft().setAxisMinimum(100f);
-        chart.getAxisLeft().setAxisMaximum(250f);
-
         chart.getAxisLeft().removeAllLimitLines();
-        LimitLine limiteCritico = new LimitLine(220f, "Limite Crítico");
-        limiteCritico.setLineColor(Color.parseColor("#e85f5f"));
-        limiteCritico.setLineWidth(2f);
-        limiteCritico.setTextColor(Color.parseColor("#e85f5f"));
-        limiteCritico.setTextSize(12f);
-        chart.getAxisLeft().addLimitLine(limiteCritico);
+        chart.getAxisLeft().resetAxisMinimum();
+        chart.getAxisLeft().resetAxisMaximum();
 
         chart.getAxisRight().setEnabled(false);
-        chart.getLegend().setTextColor(Color.WHITE);
-        chart.getLegend().setEnabled(true);
+
+        // Remove a legenda (texto "Histórico") e descrição
+        chart.getLegend().setEnabled(false);
         chart.getDescription().setEnabled(false);
 
-        chart.setData(new LineData(dataSet));
         chart.invalidate();
+    }
+
+    private String formatarHoraSemSegundos(String horaCompleta) {
+        if (horaCompleta == null || horaCompleta.length() < 5) return "";
+        // Corta para manter apenas HH:mm
+        return horaCompleta.length() >= 5 ? horaCompleta.substring(0, 5) : horaCompleta;
     }
 
     private void configurarEventos(List<EventoSessao> listaDeEventosDaApi) {
