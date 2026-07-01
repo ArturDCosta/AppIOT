@@ -69,7 +69,7 @@ public interface ApiService {
     //============================
     //FORNOS
     //============================
-    @GET("v1/fornos/vincular")
+    @PUT("v1/fornos/vincular")
     Call<Void> vincularForno (@Body VincularFornoDTO dto);
 
     @GET("v1/fornos/meus")

@@ -40,6 +40,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class DashboardFragment extends Fragment {
 
     private com.example.monitorforno.utils.SessionManager sessionManager;
@@ -57,15 +60,33 @@ public class DashboardFragment extends Fragment {
     private final ActivityResultLauncher<ScanOptions> leitorDeQrCode = registerForActivityResult(
             new ScanContract(),
             result -> {
+                // Evita crash se o fragmento já não estiver ligado ao ecrã
+                if (getContext() == null) return;
+
                 if (result.getContents() == null) {
-                    Toast.makeText(requireContext(), "Leitura cancelada", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Leitura cancelada", Toast.LENGTH_SHORT).show();
                 } else {
-                    String conteudo = result.getContents();
-                    if (conteudo != null && conteudo.contains(";")) {
-                        String[] partes = conteudo.split(";");
-                        enviarVinculoParaApi(partes[0].trim(), partes[1].trim());
-                    } else {
-                        Toast.makeText(requireContext(), "Formato de QR Code Inválido.", Toast.LENGTH_SHORT).show();
+                    // O .trim() remove espaços vazios ou quebras de linha que possam vir no QR Code
+                    String conteudo = result.getContents().trim();
+
+                    try {
+                        JSONObject jsonObject = new JSONObject(conteudo);
+
+                        // Verifica se as chaves realmente existem dentro do JSON antes de as extrair
+                        if (jsonObject.has("serialNumber") && jsonObject.has("pinSeguranca")) {
+                            String serial = jsonObject.getString("serialNumber");
+                            String pin = jsonObject.getString("pinSeguranca");
+
+                            enviarVinculoParaApi(serial, pin);
+                        } else {
+                            Toast.makeText(getContext(), "QR Code não pertence a um forno válido.", Toast.LENGTH_LONG).show();
+                        }
+
+                    } catch (JSONException e) {
+                        Log.e("DEBUG_QR", "Erro ao ler JSON: " + e.getMessage());
+                        Toast.makeText(getContext(), "Formato de QR Code Inválido.", Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Log.e("DEBUG_QR", "Erro inesperado: " + e.getMessage());
                     }
                 }
             });
@@ -297,17 +318,37 @@ public class DashboardFragment extends Fragment {
     }
 
     private void enviarVinculoParaApi(String serial, String pin) {
-        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        if (getContext() == null) return; // Prevenção de crash
+
+        ApiService apiService = RetrofitClient.getApiService(getContext());
         apiService.vincularForno(new VincularFornoDTO(serial, pin)).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
+                if (getContext() == null) return;
+
                 if (response.isSuccessful()) {
-                    Toast.makeText(requireContext(), "Forno adicionado!", Toast.LENGTH_SHORT).show();
+                    // Caso 1: O forno não estava vinculado e foi associado agora com sucesso
+                    Toast.makeText(getContext(), "Forno vinculado com sucesso!", Toast.LENGTH_SHORT).show();
+                    carregarListaDeFornos(); // Atualiza o Spinner com o novo forno
+
+                } else if (response.code() == 409) {
+                    // Caso 2: O forno já estava vinculado.
+                    // Informamos o usuário e atualizamos a lista para que ele apareça no Spinner
+                    Toast.makeText(getContext(), "Este forno já está vinculado à sua conta!", Toast.LENGTH_LONG).show();
                     carregarListaDeFornos();
+
+                } else {
+                    // Outros erros (ex: 400 se o PIN estiver errado, 404 se o serial não existir)
+                    Toast.makeText(getContext(), "Erro ao vincular forno. Código: " + response.code(), Toast.LENGTH_LONG).show();
                 }
             }
+
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {}
+            public void onFailure(Call<Void> call, Throwable t) {
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "Falha de comunicação com o servidor.", Toast.LENGTH_SHORT).show();
+                }
+            }
         });
     }
 

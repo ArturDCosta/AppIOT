@@ -34,7 +34,7 @@
                 android:layout_marginStart="8dp"
                 app:icon="@android:drawable/ic_menu_camera"
                 app:backgroundTint="@color/primary_green_dark"
-                android:text="Adicionar"/>
+                android:text="Vincular"/>
         </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
