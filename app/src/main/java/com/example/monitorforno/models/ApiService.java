@@ -100,4 +100,7 @@ public interface ApiService {
 
     @DELETE("v1/temporizadores/{id}")
     Call<Void> deletarTemporizador(@Path("id") String id);
+
+    @GET("v1/temporizadores/fornos/{fornoId}")
+    Call<List<TemporizadorResponseDTO>> getTemporizadoresPorForno(@Path("fornoId") String fornoId);
 }

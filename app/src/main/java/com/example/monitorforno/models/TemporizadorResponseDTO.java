@@ -5,6 +5,7 @@ public class TemporizadorResponseDTO {
     private String criadoEm;
     private String horarioFim;
     private boolean executado;
+    private String fornoId;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -17,4 +18,7 @@ public class TemporizadorResponseDTO {
 
     public boolean isExecutado() { return executado; }
     public void setExecutado(boolean executado) { this.executado = executado; }
+
+    public String getFornoId() { return fornoId; }
+    public void setFornoId(String fornoId) { this.fornoId = fornoId; }
 }

@@ -3,6 +3,7 @@ package com.example.monitorforno.fragments;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -163,7 +164,18 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
     }
 
     private void carregarTemporizadoresDaApi() {
-        RetrofitClient.getApiService(getContext()).getTemporizadores().enqueue(new Callback<List<TemporizadorResponseDTO>>() {
+        SessionManager sessionManager = new SessionManager(requireContext());
+        String fornoId = sessionManager.getFornoSelecionadoId();
+
+        // DEBUG: Verifica se o app realmente tem o ID do forno guardado
+        Log.d("DEBUG_FORNO", "Forno ativo no SessionManager: " + fornoId);
+
+        if (fornoId == null || fornoId.isEmpty()) {
+            Toast.makeText(getContext(), "Nenhum forno selecionado no momento.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        RetrofitClient.getApiService(getContext()).getTemporizadoresPorForno(fornoId).enqueue(new Callback<List<TemporizadorResponseDTO>>() {
             @Override
             public void onResponse(Call<List<TemporizadorResponseDTO>> call, Response<List<TemporizadorResponseDTO>> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -171,12 +183,23 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
                     temporizadores.addAll(response.body());
                     adapter.notifyDataSetChanged();
 
-                    // Logo após carregar, já checa quem é o próximo e exibe
+                    // Recalcula o temporizador principal do ecrã
                     verificarTemporizadoresExpirados();
+
+                    Log.d("DEBUG_FORNO", "Temporizadores carregados com sucesso. Quantidade: " + temporizadores.size());
+                } else {
+                    // Se entrar aqui, o backend respondeu com erro (ex: 404, 500)
+                    Log.e("DEBUG_FORNO", "Erro do Servidor! Código HTTP: " + response.code());
+                    Toast.makeText(getContext(), "Erro do servidor: " + response.code(), Toast.LENGTH_LONG).show();
                 }
             }
+
             @Override
-            public void onFailure(Call<List<TemporizadorResponseDTO>> call, Throwable t) {}
+            public void onFailure(Call<List<TemporizadorResponseDTO>> call, Throwable t) {
+                // Se entrar aqui, houve falha de rede ou queda do servidor
+                Log.e("DEBUG_FORNO", "Falha de rede ao conectar à API", t);
+                Toast.makeText(getContext(), "Falha de conexão com a API", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
