@@ -33,6 +33,7 @@ public class PerfilFragment extends Fragment {
 
     private TextView txtNomePerfil, txtEmailPerfil, txtNome, txtEmail, txtNascimento;
     private ImageView imgFotoPerfil;
+    private View cardIconeEdicao;
     private androidx.activity.result.ActivityResultLauncher<String> galeriaLauncher;
     private boolean usuarioJaPossuiFoto = false; // Controle para saber se chama POST ou PUT
 
@@ -65,6 +66,7 @@ public class PerfilFragment extends Fragment {
         // CORREÇÃO: Inicializar componentes da foto de perfil
         View layoutFotoPerfil = view.findViewById(R.id.layoutFotoPerfil);
         imgFotoPerfil = view.findViewById(R.id.imgFotoPerfil);
+        cardIconeEdicao = view.findViewById(R.id.cardIconeEdicao);
 
         MaterialButton btnAlterarSenha = view.findViewById(R.id.btnAlterarSenha);
         MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
@@ -272,6 +274,11 @@ public class PerfilFragment extends Fragment {
             byte[] decodedString = android.util.Base64.decode(base64Str, android.util.Base64.DEFAULT);
             android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
             imgFotoPerfil.setImageBitmap(decodedByte);
+
+            // Oculta o card do lápis assim que a foto for carregada com sucesso
+            if (cardIconeEdicao != null) {
+                cardIconeEdicao.setVisibility(View.GONE);
+            }
         } catch (Exception e) {
             Log.e("DECODE_IMAGE", "Erro ao renderizar base64: " + e.getMessage());
         }

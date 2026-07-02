@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -49,8 +48,7 @@
                         android:layout_width="100dp"
                         android:layout_height="100dp"
                         android:layout_gravity="center"
-                        app:cardCornerRadius="40dp"
-                        app:cardElevation="0dp"
+                        app:cardCornerRadius="50dp" app:cardElevation="0dp"
                         app:strokeWidth="0dp">
 
                         <ImageView
@@ -62,11 +60,12 @@
                     </com.google.android.material.card.MaterialCardView>
 
                     <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardIconeEdicao"
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:layout_gravity="center"
                         app:cardCornerRadius="16dp"
-                        app:cardBackgroundColor="#80000000"
+                        app:cardBackgroundColor="@color/background_dark"
                         app:cardElevation="2dp"
                         app:strokeWidth="0dp">
 
