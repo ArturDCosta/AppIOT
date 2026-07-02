@@ -17,6 +17,7 @@ import com.example.monitorforno.R;
 import com.example.monitorforno.activities.LoginActivity;
 // Lembre-se de importar suas classes corretas de API aqui!
 import com.example.monitorforno.models.ApiService;
+import com.example.monitorforno.models.NovaSenhaLogadoDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.models.PerfilDTO;
 import com.example.monitorforno.utils.SessionManager;
@@ -49,7 +50,7 @@ public class PerfilFragment extends Fragment {
 
         // 3. Ações dos botões
         btnAlterarSenha.setOnClickListener(v ->
-                Toast.makeText(getContext(), "Em desenvolvimento", Toast.LENGTH_SHORT).show()
+                exibirDialogAlterarSenha()
         );
 
         btnLogout.setOnClickListener(v -> {
@@ -104,5 +105,67 @@ public class PerfilFragment extends Fragment {
                 Toast.makeText(getContext(), "Erro de conexão com servidor.", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void exibirDialogAlterarSenha() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_alterar_senha, null);
+        builder.setView(dialogView);
+
+        android.widget.EditText edtSenhaAtual = dialogView.findViewById(R.id.edtSenhaAtual);
+        android.widget.EditText edtNovaSenha = dialogView.findViewById(R.id.edtNovaSenha);
+
+        builder.setPositiveButton("Confirmar", (dialog, which) -> {
+            String senhaAtual = edtSenhaAtual.getText().toString().trim();
+            String novaSenha = edtNovaSenha.getText().toString().trim();
+
+            // 1. Verifica se os campos estão vazios
+            if (senhaAtual.isEmpty() || novaSenha.isEmpty()) {
+                Toast.makeText(getContext(), "Preencha todos os campos!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 2. Valida a nova senha com as regras da sua API
+            if (!isSenhaValida(novaSenha)) {
+                Toast.makeText(getContext(), "A nova senha deve ter no mínimo 8 caracteres, 1 letra maiúscula, 1 minúscula e 1 número.", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            // 3. Se passou pelas validações, chama a API
+            alterarSenhaNaApi(senhaAtual, novaSenha);
+        });
+
+        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss());
+
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void alterarSenhaNaApi(String senhaAtual, String novaSenha) {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        NovaSenhaLogadoDTO dto = new NovaSenhaLogadoDTO(novaSenha, senhaAtual);
+
+        apiService.alterarMinhaSenha(dto).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Senha alterada com sucesso!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Erro ao alterar senha. Verifique se a senha atual está correta e se a nova atende aos requisitos.", Toast.LENGTH_LONG).show();
+                    Log.e("API_SENHA", "Erro: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(getContext(), "Falha na comunicação com o servidor.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private boolean isSenhaValida(String senha) {
+        // Verifica: mínimo 8 caracteres, pelo menos 1 maiúscula, 1 minúscula e 1 número
+        String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$";
+        return senha != null && senha.matches(regex);
     }
 }

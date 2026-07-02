@@ -86,6 +86,9 @@ public interface ApiService {
     @POST("v1/auth/redefinir-senha")
     Call<Void> redefinirSenha(@Body com.example.monitorforno.models.NovaSenhaDTO dto);
 
+    @PUT("v1/usuario/alterar-minha-senha")
+    Call<Void> alterarMinhaSenha(@Body NovaSenhaLogadoDTO dto);
+
     // ==========================================
     // TEMPORIZADORES
     // ==========================================
