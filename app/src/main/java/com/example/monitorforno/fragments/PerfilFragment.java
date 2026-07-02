@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,8 +16,9 @@ import androidx.fragment.app.Fragment;
 
 import com.example.monitorforno.R;
 import com.example.monitorforno.activities.LoginActivity;
-// Lembre-se de importar suas classes corretas de API aqui!
 import com.example.monitorforno.models.ApiService;
+import com.example.monitorforno.models.FotoPerfilRequestDTO;
+import com.example.monitorforno.models.FotoPerfilResponseDTO;
 import com.example.monitorforno.models.NovaSenhaLogadoDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.models.PerfilDTO;
@@ -30,6 +32,24 @@ import retrofit2.Response;
 public class PerfilFragment extends Fragment {
 
     private TextView txtNomePerfil, txtEmailPerfil, txtNome, txtEmail, txtNascimento;
+    private ImageView imgFotoPerfil;
+    private androidx.activity.result.ActivityResultLauncher<String> galeriaLauncher;
+    private boolean usuarioJaPossuiFoto = false; // Controle para saber se chama POST ou PUT
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Registra o contrato para abrir a galeria de imagens de forma moderna
+        galeriaLauncher = registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        processarEEnviarFoto(uri);
+                    }
+                }
+        );
+    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -42,19 +62,26 @@ public class PerfilFragment extends Fragment {
         txtEmail = view.findViewById(R.id.txtEmail);
         txtNascimento = view.findViewById(R.id.txtNascimento);
 
+        // CORREÇÃO: Inicializar componentes da foto de perfil
+        View layoutFotoPerfil = view.findViewById(R.id.layoutFotoPerfil);
+        imgFotoPerfil = view.findViewById(R.id.imgFotoPerfil);
+
         MaterialButton btnAlterarSenha = view.findViewById(R.id.btnAlterarSenha);
         MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
 
-        // 2. Chamar a API
+        // 2. Chamar as APIs para carregar os dados cadastrados
         buscarPerfilNaApi();
+        buscarFotoPerfilNaApi(); // CORREÇÃO: Adicionado para trazer a foto ao entrar na tela
 
-        // 3. Ações dos botões
-        btnAlterarSenha.setOnClickListener(v ->
-                exibirDialogAlterarSenha()
-        );
+        // 3. Ações dos botões e cliques
+        btnAlterarSenha.setOnClickListener(v -> exibirDialogAlterarSenha());
+
+        // CORREÇÃO: Vincula o clique no container da foto para abrir a galeria
+        if (layoutFotoPerfil != null) {
+            layoutFotoPerfil.setOnClickListener(v -> galeriaLauncher.launch("image/*"));
+        }
 
         btnLogout.setOnClickListener(v -> {
-
             // Chama a classe que gerencia a sessão e pede para limpar
             SessionManager sessionManager = new SessionManager(requireContext());
             sessionManager.limparSessao();
@@ -70,7 +97,6 @@ public class PerfilFragment extends Fragment {
     }
 
     private void buscarPerfilNaApi() {
-        // Inicializa o Retrofit
         ApiService apiService = RetrofitClient.getApiService(requireContext());
 
         apiService.getMeuPerfil().enqueue(new Callback<PerfilDTO>() {
@@ -89,7 +115,7 @@ public class PerfilFragment extends Fragment {
                     if (dataDoBackend != null && dataDoBackend.contains("-")) {
                         String[] partes = dataDoBackend.split("-");
                         String dataFormatada = partes[2] + "/" + partes[1] + "/" + partes[0];
-                        txtNascimento.setText(dataFormatada); // Vai exibir: 01/01/2000
+                        txtNascimento.setText(dataFormatada);
                     } else {
                         txtNascimento.setText(dataDoBackend);
                     }
@@ -119,19 +145,16 @@ public class PerfilFragment extends Fragment {
             String senhaAtual = edtSenhaAtual.getText().toString().trim();
             String novaSenha = edtNovaSenha.getText().toString().trim();
 
-            // 1. Verifica se os campos estão vazios
             if (senhaAtual.isEmpty() || novaSenha.isEmpty()) {
                 Toast.makeText(getContext(), "Preencha todos os campos!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // 2. Valida a nova senha com as regras da sua API
             if (!isSenhaValida(novaSenha)) {
                 Toast.makeText(getContext(), "A nova senha deve ter no mínimo 8 caracteres, 1 letra maiúscula, 1 minúscula e 1 número.", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            // 3. Se passou pelas validações, chama a API
             alterarSenhaNaApi(senhaAtual, novaSenha);
         });
 
@@ -164,8 +187,93 @@ public class PerfilFragment extends Fragment {
     }
 
     private boolean isSenhaValida(String senha) {
-        // Verifica: mínimo 8 caracteres, pelo menos 1 maiúscula, 1 minúscula e 1 número
         String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$";
-        return senha != null && senha.matches(regex);
+        return java.util.regex.Pattern.matches(regex, senha);
+    }
+
+    private void buscarFotoPerfilNaApi() {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        apiService.getFotoPerfil().enqueue(new Callback<FotoPerfilResponseDTO>() {
+            @Override
+            public void onResponse(Call<FotoPerfilResponseDTO> call, Response<FotoPerfilResponseDTO> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getFotoBase64() != null) {
+                    usuarioJaPossuiFoto = true;
+                    exibirImagemBase64(response.body().getFotoBase64());
+                } else {
+                    usuarioJaPossuiFoto = false;
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FotoPerfilResponseDTO> call, Throwable t) {
+                Log.e("API_FOTO", "Erro ao buscar foto: " + t.getMessage());
+            }
+        });
+    }
+
+    private void processarEEnviarFoto(android.net.Uri uri) {
+        try {
+            java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+            android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(inputStream);
+
+            // Redimensiona para evitar Strings Base64 gigantescas que pesam no banco de dados (Max 400x400)
+            android.graphics.Bitmap resizedBitmap = android.graphics.Bitmap.createScaledBitmap(bitmap, 400, 400, true);
+
+            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+            resizedBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, outputStream);
+            byte[] byteArray = outputStream.toByteArray();
+
+            String base64Image = android.util.Base64.encodeToString(byteArray, android.util.Base64.NO_WRAP);
+
+            enviarFotoParaApi(base64Image);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "Erro ao processar imagem.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void enviarFotoParaApi(String base64Image) {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        FotoPerfilRequestDTO dto = new FotoPerfilRequestDTO(base64Image);
+
+        Call<FotoPerfilResponseDTO> call;
+
+        if (usuarioJaPossuiFoto) {
+            call = apiService.updateFotoPerfil(dto);
+        } else {
+            call = apiService.setFotoPerfil(dto);
+        }
+
+        call.enqueue(new Callback<FotoPerfilResponseDTO>() {
+            @Override
+            public void onResponse(Call<FotoPerfilResponseDTO> call, Response<FotoPerfilResponseDTO> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(getContext(), "Foto de perfil updated!", Toast.LENGTH_SHORT).show();
+                    exibirImagemBase64(response.body().getFotoBase64());
+                    usuarioJaPossuiFoto = true;
+                } else {
+                    // CORREÇÃO: Removido a linha com erro de digitação do 'Toast.org.json...'
+                    Log.e("API_FOTO", "Erro ao salvar: " + response.code());
+                    Toast.makeText(getContext(), "Erro ao salvar foto no servidor.", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FotoPerfilResponseDTO> call, Throwable t) {
+                Toast.makeText(getContext(), "Falha de conexão com o servidor.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void exibirImagemBase64(String base64Str) {
+        try {
+            if (imgFotoPerfil == null) return;
+            byte[] decodedString = android.util.Base64.decode(base64Str, android.util.Base64.DEFAULT);
+            android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+            imgFotoPerfil.setImageBitmap(decodedByte);
+        } catch (Exception e) {
+            Log.e("DECODE_IMAGE", "Erro ao renderizar base64: " + e.getMessage());
+        }
     }
 }

@@ -106,4 +106,16 @@ public interface ApiService {
 
     @GET("v1/temporizadores/fornos/{fornoId}")
     Call<List<TemporizadorResponseDTO>> getTemporizadoresPorForno(@Path("fornoId") String fornoId);
+
+    // ==========================================
+    // FOTO DE PERFIL
+    // ==========================================
+    @GET("v1/usuario/foto-perfil/visualizar-img")
+    Call<FotoPerfilResponseDTO> getFotoPerfil();
+
+    @POST("v1/usuario/foto-perfil/set-img")
+    Call<FotoPerfilResponseDTO> setFotoPerfil(@Body FotoPerfilRequestDTO dto);
+
+    @PUT("v1/usuario/foto-perfil/update-img")
+    Call<FotoPerfilResponseDTO> updateFotoPerfil(@Body FotoPerfilRequestDTO dto);
 }
