@@ -140,10 +140,24 @@ public class PerfilFragment extends Fragment {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_alterar_senha, null);
         builder.setView(dialogView);
 
-        android.widget.EditText edtSenhaAtual = dialogView.findViewById(R.id.edtSenhaAtual);
-        android.widget.EditText edtNovaSenha = dialogView.findViewById(R.id.edtNovaSenha);
+        android.app.AlertDialog dialog = builder.create();
 
-        builder.setPositiveButton("Confirmar", (dialog, which) -> {
+        // TRUQUE DE DESIGN: Deixa o fundo padrão do Dialog transparente para as bordas redondas do nosso XML aparecerem!
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        // Mapear os elementos do nosso layout customizado
+        com.google.android.material.textfield.TextInputEditText edtSenhaAtual = dialogView.findViewById(R.id.edtSenhaAtual);
+        com.google.android.material.textfield.TextInputEditText edtNovaSenha = dialogView.findViewById(R.id.edtNovaSenha);
+        com.google.android.material.button.MaterialButton btnCancelar = dialogView.findViewById(R.id.btnCancelar);
+        com.google.android.material.button.MaterialButton btnConfirmar = dialogView.findViewById(R.id.btnConfirmar);
+
+        // Ação de cancelar
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        // Ação de confirmar
+        btnConfirmar.setOnClickListener(v -> {
             String senhaAtual = edtSenhaAtual.getText().toString().trim();
             String novaSenha = edtNovaSenha.getText().toString().trim();
 
@@ -157,16 +171,15 @@ public class PerfilFragment extends Fragment {
                 return;
             }
 
-            alterarSenhaNaApi(senhaAtual, novaSenha);
+            // Passamos o dialog para poder fechá-lo de forma segura lá dentro
+            alterarSenhaNaApi(senhaAtual, novaSenha, dialog);
         });
 
-        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss());
-
-        android.app.AlertDialog dialog = builder.create();
+        // Mostra o dialog
         dialog.show();
     }
 
-    private void alterarSenhaNaApi(String senhaAtual, String novaSenha) {
+    private void alterarSenhaNaApi(String senhaAtual, String novaSenha, android.app.AlertDialog dialog) {
         ApiService apiService = RetrofitClient.getApiService(requireContext());
         NovaSenhaLogadoDTO dto = new NovaSenhaLogadoDTO(novaSenha, senhaAtual);
 
@@ -174,9 +187,15 @@ public class PerfilFragment extends Fragment {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(getContext(), "Senha alterada com sucesso!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Senha alterada! Por favor, faça login novamente.", Toast.LENGTH_LONG).show();
+
+                    // 1. Fecha o popup antes de mudar de tela (evita o crash WindowLeaked)
+                    dialog.dismiss();
+
+                    // 2. Limpa a sessão e desloga o usuário por segurança
+                    fazerLogout();
                 } else {
-                    Toast.makeText(getContext(), "Erro ao alterar senha. Verifique se a senha atual está correta e se a nova atende aos requisitos.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getContext(), "Erro ao alterar. Verifique se a senha atual está correta.", Toast.LENGTH_LONG).show();
                     Log.e("API_SENHA", "Erro: " + response.code());
                 }
             }
@@ -186,6 +205,19 @@ public class PerfilFragment extends Fragment {
                 Toast.makeText(getContext(), "Falha na comunicação com o servidor.", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void fazerLogout() {
+        SessionManager sessionManager = new SessionManager(requireContext());
+        sessionManager.limparSessao();
+
+        Intent intent = new Intent(getActivity(), LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+
+        if (getActivity() != null) {
+            getActivity().finish();
+        }
     }
 
     private boolean isSenhaValida(String senha) {
