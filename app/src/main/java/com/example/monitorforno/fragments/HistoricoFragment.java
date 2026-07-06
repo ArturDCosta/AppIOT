@@ -1,5 +1,6 @@
 package com.example.monitorforno.fragments;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -24,6 +25,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,11 +42,9 @@ public class HistoricoFragment extends Fragment {
 
     private SessaoAdapter adapter;
 
-    // Lista original vinda da API (intacta) e lista exibida na tela (filtrada/ordenada)
     private List<SessaoDetalhesDTO> listaOriginal = new ArrayList<>();
     private List<SessaoDetalhesDTO> listaExibida = new ArrayList<>();
 
-    // Controle do estado da ordenação: true = Mais recentes no topo (padrão)
     private boolean ordenadoPorMaisRecentes = true;
 
     @Override
@@ -71,10 +71,10 @@ public class HistoricoFragment extends Fragment {
     }
 
     private void configurarEventos() {
-        // 1. Clique no botão de ordenação
+        // Alternar ordenação
         btnOrdenar.setOnClickListener(v -> alternarOrdenacao());
 
-        // 2. Digitação no campo de pesquisa
+        // Pesquisa em tempo real (digitação)
         edtPesquisa.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -87,6 +87,12 @@ public class HistoricoFragment extends Fragment {
             @Override
             public void afterTextChanged(Editable s) {}
         });
+
+        // DICA BÔNUS: Se quiser que ao dar um clique longo ou duplo no campo abra o calendário:
+        edtPesquisa.setOnLongClickListener(v -> {
+            abrirSeletorDeData();
+            return true;
+        });
     }
 
     private void buscarSessoesNaApi() {
@@ -97,16 +103,12 @@ public class HistoricoFragment extends Fragment {
             public void onResponse(@NonNull Call<List<SessaoDetalhesDTO>> call, @NonNull Response<List<SessaoDetalhesDTO>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     listaOriginal = response.body();
-
-                    // Copia para a lista de exibição e aplica a ordenação padrão inicial
                     listaExibida = new ArrayList<>(listaOriginal);
-                    aplicarOrdenacaoNaLista();
 
-                    // Configura o RecyclerView
+                    aplicarOrdenacaoNaLista();
                     adapter = new SessaoAdapter(listaExibida);
                     recyclerView.setAdapter(adapter);
 
-                    // Atualiza os Cards de resumo no topo
                     calcularEstatisticasGlobais(listaOriginal);
                 } else {
                     if (getContext() != null) {
@@ -118,9 +120,8 @@ public class HistoricoFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Call<List<SessaoDetalhesDTO>> call, @NonNull Throwable t) {
                 if (getContext() != null) {
-                    Toast.makeText(getContext(), "Falha na conexão com o servidor", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Falha na conexão", Toast.LENGTH_SHORT).show();
                 }
-                Log.e("HistoricoFragment", "Erro API: " + t.getMessage());
             }
         });
     }
@@ -131,20 +132,11 @@ public class HistoricoFragment extends Fragment {
     private void alternarOrdenacao() {
         if (listaExibida.isEmpty()) return;
 
-        // Inverte o estado
         ordenadoPorMaisRecentes = !ordenadoPorMaisRecentes;
-
-        // Atualiza o texto do botão para indicar o critério atual
-        if (ordenadoPorMaisRecentes) {
-            btnOrdenar.setText("Mais recentes");
-        } else {
-            btnOrdenar.setText("Mais antigos");
-        }
+        btnOrdenar.setText(ordenadoPorMaisRecentes ? "Mais recentes" : "Mais antigos");
 
         aplicarOrdenacaoNaLista();
-        if (adapter != null) {
-            adapter.notifyDataSetChanged(); // Avisa a tela que a ordem mudou
-        }
+        if (adapter != null) adapter.notifyDataSetChanged();
     }
 
     private void aplicarOrdenacaoNaLista() {
@@ -152,18 +144,12 @@ public class HistoricoFragment extends Fragment {
             String data1 = sessao1.getHorarioInicio() != null ? sessao1.getHorarioInicio() : "";
             String data2 = sessao2.getHorarioInicio() != null ? sessao2.getHorarioInicio() : "";
 
-            // Como o formato ISO do Spring Boot é "2026-07-06T14:30:00",
-            // a comparação alfabética de String já ordena perfeitamente de forma cronológica!
-            if (ordenadoPorMaisRecentes) {
-                return data2.compareTo(data1); // Decrescente (Mais recente primeiro)
-            } else {
-                return data1.compareTo(data2); // Crescente (Mais antigo primeiro)
-            }
+            return ordenadoPorMaisRecentes ? data2.compareTo(data1) : data1.compareTo(data2);
         });
     }
 
     // =========================================================================
-    // LÓGICA DE PESQUISA (FILTRO)
+    // LÓGICA DE PESQUISA POR DATA E ESTADO
     // =========================================================================
     private void filtrarSessoes(String texto) {
         listaExibida.clear();
@@ -172,21 +158,51 @@ public class HistoricoFragment extends Fragment {
             listaExibida.addAll(listaOriginal);
         } else {
             String busca = texto.toLowerCase().trim();
+
             for (SessaoDetalhesDTO sessao : listaOriginal) {
                 String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal().toLowerCase() : "";
-                String inicio = sessao.getHorarioInicio() != null ? sessao.getHorarioInicio() : "";
+                String inicioISO = sessao.getHorarioInicio() != null ? sessao.getHorarioInicio() : "";
 
-                // Permite pesquisar pelo estado (ex: "ativo") ou pela data (ex: "2026-07")
-                if (estado.contains(busca) || inicio.contains(busca)) {
+                // 1. Converte a data ISO (ex: "2026-07-06T14:30:00") para o padrão BR ("06/07/2026")
+                String dataBR = converterIsoParaBr(inicioISO);
+
+                // 2. Verifica se a busca bate com o Estado, com a Data ISO ou com a Data Brasileira!
+                if (estado.contains(busca) || inicioISO.contains(busca) || dataBR.contains(busca)) {
                     listaExibida.add(sessao);
                 }
             }
         }
 
-        aplicarOrdenacaoNaLista(); // Garante que a lista filtrada continue ordenada
-        if (adapter != null) {
-            adapter.notifyDataSetChanged();
-        }
+        aplicarOrdenacaoNaLista();
+        if (adapter != null) adapter.notifyDataSetChanged();
+    }
+
+    // Converte "2026-07-06T14:30" em "06/07/2026" para facilitar a pesquisa do usuário
+    private String converterIsoParaBr(String iso) {
+        if (iso == null || !iso.contains("T")) return "";
+        try {
+            String[] partes = iso.split("T")[0].split("-");
+            if (partes.length == 3) {
+                return partes[2] + "/" + partes[1] + "/" + partes[0];
+            }
+        } catch (Exception ignored) {}
+        return "";
+    }
+
+    // =========================================================================
+    // CALENDÁRIO NATIVO (Opcional - Pode chamar ao clicar num botão ou segurar o campo)
+    // =========================================================================
+    private void abrirSeletorDeData() {
+        if (getContext() == null) return;
+
+        Calendar calc = Calendar.getInstance();
+        DatePickerDialog dialog = new DatePickerDialog(getContext(), (view, ano, mes, dia) -> {
+            // Formata a data escolhida no calendário para "DD/MM/YYYY" (ex: "06/07/2026")
+            String dataEscolhida = String.format("%02d/%02d/%04d", dia, (mes + 1), ano);
+            edtPesquisa.setText(dataEscolhida);
+        }, calc.get(Calendar.YEAR), calc.get(Calendar.MONTH), calc.get(Calendar.DAY_OF_MONTH));
+
+        dialog.show();
     }
 
     // =========================================================================
@@ -195,7 +211,7 @@ public class HistoricoFragment extends Fragment {
     private void calcularEstatisticasGlobais(List<SessaoDetalhesDTO> sessoes) {
         if (sessoes == null || sessoes.isEmpty()) {
             txtTotalSessoes.setText("Total de Sessões: 0");
-            txtTempoTotal.setText("Tempo Total: 0h");
+            txtTempoTotal.setText("Tempo Total: 0min");
             txtMaiorTemperatura.setText("Maior Temperatura: --°C");
             return;
         }
@@ -205,12 +221,10 @@ public class HistoricoFragment extends Fragment {
         long tempoTotalSegundos = 0;
 
         for (SessaoDetalhesDTO sessao : sessoes) {
-            // Soma do tempo total
             if (sessao.getDuracaoSegundos() != null) {
                 tempoTotalSegundos += sessao.getDuracaoSegundos();
             }
 
-            // Busca a maior temperatura se houver lista de temperaturas, ou no campo opcional
             if (sessao.getTemperaturas() != null) {
                 for (int i = 0; i < sessao.getTemperaturas().size(); i++) {
                     if (sessao.getTemperaturas().get(i).getTemperaturaAtual() != null) {
@@ -218,22 +232,14 @@ public class HistoricoFragment extends Fragment {
                         if (temp > maiorTempGlobal) maiorTempGlobal = temp;
                     }
                 }
-            } else if (sessao.getTemperaturaMaxima() != null && sessao.getTemperaturaMaxima() > maiorTempGlobal) {
-                maiorTempGlobal = sessao.getTemperaturaMaxima();
             }
         }
 
-        // Converte o tempo total de segundos para Horas e Minutos
         long horas = tempoTotalSegundos / 3600;
         long minutos = (tempoTotalSegundos % 3600) / 60;
 
         txtTotalSessoes.setText("Total de Sessões: " + totalSessoes);
         txtMaiorTemperatura.setText("Maior Temperatura: " + Math.round(maiorTempGlobal) + "°C");
-
-        if (horas > 0) {
-            txtTempoTotal.setText("Tempo Total: " + horas + "h " + minutos + "min");
-        } else {
-            txtTempoTotal.setText("Tempo Total: " + minutos + "min");
-        }
+        txtTempoTotal.setText(horas > 0 ? "Tempo Total: " + horas + "h " + minutos + "min" : "Tempo Total: " + minutos + "min");
     }
 }
