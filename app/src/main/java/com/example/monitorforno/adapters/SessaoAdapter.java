@@ -37,37 +37,54 @@ public class SessaoAdapter extends RecyclerView.Adapter<SessaoAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         SessaoDetalhesDTO sessao = sessoes.get(position);
 
-        holder.txtData.setText(sessao.getData() != null ? sessao.getData() : "--/--/----");
-        holder.txtHorario.setText(sessao.getHorarioInicio() != null ? sessao.getHorarioInicio() : "--:--");
-        holder.txtDuracao.setText(sessao.getDuracao() != null ? sessao.getDuracao() : "0m");
+        // 1. Extrai a Data (Dia/Mês/Ano) de dentro de "inicioSessao" (ex: "2026-07-06T14:30:00")
+        String dataFormatada = "--/--/----";
+        String inicioSessao = sessao.getHorarioInicio();
+        if (inicioSessao != null && inicioSessao.contains("T")) {
+            try {
+                String[] partes = inicioSessao.split("T")[0].split("-");
+                if (partes.length == 3) {
+                    dataFormatada = partes[2] + "/" + partes[1] + "/" + partes[0];
+                }
+            } catch (Exception ignored) {}
+        }
+        holder.txtData.setText(dataFormatada);
 
-        String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal() : "DESCONHECIDO";
-        holder.txtEstado.setText(estado.replace("_", " "));
+        // 2. Extrai o Horário (HH:mm)
+        String horaFormatada = "--:--";
+        if (inicioSessao != null && inicioSessao.contains("T")) {
+            String hora = inicioSessao.split("T")[1];
+            horaFormatada = hora.length() >= 5 ? hora.substring(0, 5) : hora;
+        }
+        holder.txtHorario.setText(horaFormatada);
 
-        // Cores baseadas no estado da sessão
+        // 3. Converte duracaoSegundos em Minutos
+        long minutos = (sessao.getDuracaoSegundos() != null) ? (sessao.getDuracaoSegundos() / 60) : 0;
+        holder.txtDuracao.setText(minutos + " min");
+
+        // 4. Cores do Estado Final
+        String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal() : "FORNO_DESLIGADO";
+        holder.txtEstado.setText(estado.replace("FORNO_", ""));
+
         switch (estado) {
             case "FORNO_ATIVO":
-                holder.txtEstado.setTextColor(Color.parseColor("#4CAF50")); // Verde
+                holder.txtEstado.setTextColor(Color.parseColor("#4CAF50"));
                 break;
             case "FORNO_AQUECENDO":
-                holder.txtEstado.setTextColor(Color.parseColor("#FF9800")); // Laranja
+                holder.txtEstado.setTextColor(Color.parseColor("#FF9800"));
                 break;
             case "FORNO_ESFRIANDO":
-                holder.txtEstado.setTextColor(Color.parseColor("#2196F3")); // Azul
+                holder.txtEstado.setTextColor(Color.parseColor("#2196F3"));
                 break;
-            case "FORNO_DESLIGADO":
             default:
                 holder.txtEstado.setTextColor(Color.GRAY);
                 break;
         }
 
-        // Evento de clique para abrir os Detalhes da Sessão
+        // Clique para ir para Detalhes
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(v.getContext(), DetalhesSessaoActivity.class);
-
-            // O MAIS IMPORTANTE: Passar o ID real da sessão (Ex: "f47ac10b-58cc-4372-a567-0e02b2c3d479")
             intent.putExtra("SESSAO_ID", sessao.getId());
-
             v.getContext().startActivity(intent);
         });
     }

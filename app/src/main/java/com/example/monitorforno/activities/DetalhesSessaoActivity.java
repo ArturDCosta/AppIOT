@@ -1,22 +1,22 @@
 package com.example.monitorforno.activities;
 
-import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import android.graphics.Color;
-import android.util.Log;
+import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.monitorforno.R;
 import com.example.monitorforno.adapters.EventoSessaoAdapter;
 import com.example.monitorforno.models.ApiService;
-import com.example.monitorforno.models.EventoSessao;
 import com.example.monitorforno.models.SessaoDetalhesDTO;
+import com.example.monitorforno.models.TemperaturaDTO;
 import com.example.monitorforno.network.RetrofitClient;
+
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -27,9 +27,6 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.monitorforno.R;
-import com.github.mikephil.charting.components.LimitLine;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -37,147 +34,128 @@ import retrofit2.Response;
 public class DetalhesSessaoActivity extends AppCompatActivity {
 
     private LineChart chart;
-
-    // Declaração das Views para atualizar dinamicamente após a resposta da API
     private TextView txtTituloSessao, txtInicio, txtFim, txtDuracao, txtEstadoFinal;
     private TextView txtTempMax, txtTempMedia, txtQtdAlertas, txtQtdCriticos;
     private RecyclerView recyclerView;
+    private ImageView btnVoltar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detalhes_sessao);
 
-        // 1. Inicialização dos componentes de interface
+        inicializarViews();
+        btnVoltar.setOnClickListener(v -> finish());
+
+        String sessaoId = getIntent().getStringExtra("SESSAO_ID");
+        if (sessaoId != null && !sessaoId.isEmpty()) {
+            buscarDetalhesNaApi(sessaoId);
+        } else {
+            Toast.makeText(this, "ID da sessão não encontrado", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+
+    private void inicializarViews() {
+        chart = findViewById(R.id.chartSessao);
+        btnVoltar = findViewById(R.id.btnVoltar);
         txtTituloSessao = findViewById(R.id.txtTituloSessao);
         txtInicio = findViewById(R.id.txtInicio);
         txtFim = findViewById(R.id.txtFim);
         txtDuracao = findViewById(R.id.txtDuracao);
         txtEstadoFinal = findViewById(R.id.txtEstadoFinal);
+
         txtTempMax = findViewById(R.id.txtTempMax);
         txtTempMedia = findViewById(R.id.txtTempMedia);
         txtQtdAlertas = findViewById(R.id.txtQtdAlertas);
         txtQtdCriticos = findViewById(R.id.txtQtdCriticos);
-        chart = findViewById(R.id.chartSessao);
+
         recyclerView = findViewById(R.id.recyclerEventosSessao);
-
-        ImageView btnVoltar = findViewById(R.id.btnVoltar);
-        btnVoltar.setOnClickListener(v -> finish());
-
-        // 2. Resgata o ID da sessão enviado pela tela anterior
-        String sessaoId = getIntent().getStringExtra("SESSAO_ID");
-
-        if (sessaoId != null) {
-            buscarDadosDaSessao(sessaoId);
-        } else {
-            Toast.makeText(this, "Erro: ID da sessão não recebido.", Toast.LENGTH_SHORT).show();
-            finish();
-        }
     }
 
-    private void buscarDadosDaSessao(String id) {
-        // O RetrofitClient injeta o token automaticamente via Interceptor por trás dos panos
+    private void buscarDetalhesNaApi(String id) {
         ApiService apiService = RetrofitClient.getApiService(this);
-
         apiService.getSessaoPorId(id).enqueue(new Callback<SessaoDetalhesDTO>() {
             @Override
-            public void onResponse(@NonNull Call<SessaoDetalhesDTO> call, @NonNull Response<SessaoDetalhesDTO> response) {
+            public void onResponse(Call<SessaoDetalhesDTO> call, Response<SessaoDetalhesDTO> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    SessaoDetalhesDTO sessao = response.body();
-                    atualizarInterfaceGrafica(sessao);
+                    atualizarTela(response.body());
                 } else {
-                    Toast.makeText(DetalhesSessaoActivity.this, "Erro ao carregar sessão: " + response.code(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(DetalhesSessaoActivity.this, "Erro ao carregar detalhes", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<SessaoDetalhesDTO> call, @NonNull Throwable t) {
-                Toast.makeText(DetalhesSessaoActivity.this, "Falha de conexão: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onFailure(Call<SessaoDetalhesDTO> call, Throwable t) {
+                Toast.makeText(DetalhesSessaoActivity.this, "Falha na conexão com o servidor", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void atualizarInterfaceGrafica(SessaoDetalhesDTO sessao) {
-        // 1. Preenche textos principais da sessão
-        txtTituloSessao.setText("Sessão " + (sessao.getData() != null ? sessao.getData() : ""));
-        txtInicio.setText("Início: " + (sessao.getHorarioInicio() != null ? sessao.getHorarioInicio() : "--:--"));
-        txtFim.setText("Fim: " + (sessao.getHorarioFim() != null ? sessao.getHorarioFim() : "--:--"));
-        txtDuracao.setText("Duração: " + (sessao.getDuracao() != null ? sessao.getDuracao() : "0m"));
+    private void atualizarTela(SessaoDetalhesDTO sessao) {
+        txtTituloSessao.setText("Resumo da Sessão");
+        txtInicio.setText("Início: " + formatarHoraSemSegundos(sessao.getHorarioInicio()));
+        txtFim.setText("Fim: " + formatarHoraSemSegundos(sessao.getHorarioFim()));
 
-        // 2. Preenche métricas e telemetrias coletadas
-        txtTempMax.setText("Máx: " + sessao.getTemperaturaMaxima() + "°C");
-        txtTempMedia.setText("Média: " + sessao.getTemperaturaMedia() + "°C");
-        txtQtdAlertas.setText("Alertas: " + sessao.getQuantidadeAlertas());
-        txtQtdCriticos.setText("Críticos: " + sessao.getQuantidadeCriticos());
+        long duracaoMin = (sessao.getDuracaoSegundos() != null) ? (sessao.getDuracaoSegundos() / 60) : 0;
+        txtDuracao.setText("Duração: " + duracaoMin + " min");
 
-        // 3. Altera as cores baseadas no estado da sessão (reaproveitando sua lógica original)
-        String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal() : "FORNO_DESLIGADO";
-        switch (estado) {
-            case "FORNO_ATIVO":
-                txtEstadoFinal.setText("Ativo");
-                txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_ativo));
-                break;
-            case "FORNO_AQUECENDO":
-                txtEstadoFinal.setText("Aquecendo");
-                txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_aquecendo));
-                break;
-            case "FORNO_ESFRIANDO":
-                txtEstadoFinal.setText("Esfriando");
-                txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_esfriando));
-                break;
-            default:
-                txtEstadoFinal.setText("Desligado");
-                txtEstadoFinal.setTextColor(getResources().getColor(R.color.forno_desligado));
-                break;
+        String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal() : "DESLIGADO";
+        txtEstadoFinal.setText(estado.replace("FORNO_", ""));
+
+        // Extrai dados da lista de temperaturas vinda do Spring Boot
+        List<Float> valores = new ArrayList<>();
+        List<String> horarios = new ArrayList<>();
+        double somaTemp = 0;
+        double maxTemp = 0;
+
+        if (sessao.getTemperaturas() != null) {
+            for (TemperaturaDTO t : sessao.getTemperaturas()) {
+                if (t.getTemperaturaAtual() != null) {
+                    float val = t.getTemperaturaAtual().floatValue();
+                    valores.add(val);
+                    horarios.add(t.getHorarioFormatado());
+
+                    somaTemp += val;
+                    if (val > maxTemp) maxTemp = val;
+                }
+            }
         }
 
-        // 4. Atualiza o gráfico com as listas de telemetria vindas da API
-        // Certifique-se de que o seu SessaoDetalhesDTO possua esses métodos retornando List<Float> e List<String>
-        atualizarGrafico(sessao.getTemperaturasLista(), sessao.getHorariosLista());
+        int qtdRegistros = valores.size();
+        txtTempMax.setText("Máx: " + Math.round(maxTemp) + "°C");
+        txtTempMedia.setText("Média: " + (qtdRegistros > 0 ? Math.round(somaTemp / qtdRegistros) : 0) + "°C");
 
-        // 5. Configura a lista de eventos/alertas ocorridos nessa sessão específica
+        // Desenha o gráfico
+        atualizarGrafico(valores, horarios);
+
+        // Preenche eventos se existirem
         if (sessao.getEventos() != null) {
-            configurarEventos(sessao.getEventos());
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+            recyclerView.setAdapter(new EventoSessaoAdapter(sessao.getEventos()));
+            txtQtdAlertas.setText("Eventos: " + sessao.getEventos().size());
         }
     }
 
-    public void atualizarGrafico(List<Float> valores, List<String> horarios) {
-        if (valores == null || horarios == null) {
-            Log.e("Grafico", "Dados nulos recebidos da API");
-            return;
-        }
-        if (valores.size() != horarios.size()) {
-            Log.e("Grafico", "Desalinhamento: " + valores.size() + " valores / " + horarios.size() + " horários");
-            return;
-        }
-        if (valores.isEmpty()) {
-            Log.w("Grafico", "Sessão sem dados de temperatura");
+    private void atualizarGrafico(List<Float> valores, List<String> horarios) {
+        if (valores.isEmpty() || valores.size() != horarios.size()) {
             chart.clear();
             chart.invalidate();
             return;
         }
 
-        // Formata a lista de horários para remover os segundos antes de ir para o gráfico
-        List<String> horariosFormatados = new ArrayList<>();
-        for (String hora : horarios) {
-            horariosFormatados.add(formatarHoraSemSegundos(hora));
-        }
-
-        configurarGrafico(valores, horariosFormatados);
-    }
-
-    private void configurarGrafico(List<Float> valores, List<String> horarios) {
-        ArrayList<Entry> entries = new ArrayList<>();
+        List<Entry> entries = new ArrayList<>();
         for (int i = 0; i < valores.size(); i++) {
             entries.add(new Entry(i, valores.get(i)));
         }
 
-        // Configurações idênticas ao do TemperaturaFragment
-        LineDataSet dataSet = new LineDataSet(entries, "Histórico");
-        dataSet.setColor(Color.parseColor("#fc9403"));
-        dataSet.setCircleColor(Color.parseColor("#fc9403"));
-        dataSet.setLineWidth(2f);
-        dataSet.setValueTextColor(Color.WHITE);
+        LineDataSet dataSet = new LineDataSet(entries, "Temperatura (°C)");
+        dataSet.setColor(Color.parseColor("#FF5722"));
+        dataSet.setCircleColor(Color.parseColor("#FF5722"));
+        dataSet.setLineWidth(2.5f);
+        dataSet.setCircleRadius(3f);
+        dataSet.setDrawValues(false);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
 
         LineData lineData = new LineData(dataSet);
         chart.setData(lineData);
@@ -188,31 +166,20 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         eixoX.setValueFormatter(new IndexAxisValueFormatter(horarios));
         eixoX.setTextColor(Color.WHITE);
 
-        // Limpa formatações antigas do eixo Y (como limite, min/max e cor)
         chart.getAxisLeft().setTextColor(Color.WHITE);
-        chart.getAxisLeft().removeAllLimitLines();
-        chart.getAxisLeft().resetAxisMinimum();
-        chart.getAxisLeft().resetAxisMaximum();
-
         chart.getAxisRight().setEnabled(false);
-
-        // Remove a legenda (texto "Histórico") e descrição
-        chart.getLegend().setEnabled(false);
+        chart.getLegend().setTextColor(Color.WHITE);
         chart.getDescription().setEnabled(false);
 
+        chart.animateX(800);
         chart.invalidate();
     }
 
-    private String formatarHoraSemSegundos(String horaCompleta) {
-        if (horaCompleta == null || horaCompleta.length() < 5) return "";
-        // Corta para manter apenas HH:mm
-        return horaCompleta.length() >= 5 ? horaCompleta.substring(0, 5) : horaCompleta;
-    }
-
-    private void configurarEventos(List<EventoSessao> listaDeEventosDaApi) {
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        // Alimenta o adapter diretamente com os eventos retornados pela sua API
-        EventoSessaoAdapter adapter = new EventoSessaoAdapter(listaDeEventosDaApi);
-        recyclerView.setAdapter(adapter);
+    private String formatarHoraSemSegundos(String dataHora) {
+        if (dataHora == null) return "--:--";
+        if (dataHora.contains("T")) {
+            dataHora = dataHora.split("T")[1];
+        }
+        return dataHora.length() >= 5 ? dataHora.substring(0, 5) : dataHora;
     }
 }

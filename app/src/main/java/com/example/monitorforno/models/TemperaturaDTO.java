@@ -2,56 +2,45 @@ package com.example.monitorforno.models;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.annotations.SerializedName;
 
 public class TemperaturaDTO {
     private String id;
+
+    @SerializedName("temperaturaAtual")
     private Double temperaturaAtual;
+
+    @SerializedName("temperaturaUltima")
     private Double temperaturaUltima;
 
-    // O JsonElement permite aceitar o formato que vier da API (String ou Array) sem dar erro de conversão
+    @SerializedName("registradoEm")
     private JsonElement registradoEm;
 
-    public String getId() { return id; }
-    public Double getTemperaturaAtual() { return temperaturaAtual; }
-    public Double getTemperaturaUltima() { return temperaturaUltima; }
+    public Double getTemperaturaAtual() {
+        return temperaturaAtual != null ? temperaturaAtual : 0.0;
+    }
 
-    // Método inteligente para devolver a hora já formatada para o gráfico
+    // Extrai a hora (ex: "14:30:15") independentemente se o Spring Boot mandar como String ou Array
     public String getHorarioFormatado() {
-        if (registradoEm == null || registradoEm.isJsonNull()) {
-            return "--:--:--";
-        }
+        if (registradoEm == null || registradoEm.isJsonNull()) return "--:--";
 
         try {
-            // 1. Se a API enviar como String (ex: "2026-06-29T19:19:50")
             if (registradoEm.isJsonPrimitive()) {
                 String dataString = registradoEm.getAsString();
                 if (dataString.contains("T")) {
-                    String horaComMilissegundos = dataString.split("T")[1];
-                    if (horaComMilissegundos.length() >= 8) {
-                        return horaComMilissegundos.substring(0, 8);
-                    }
-                    return horaComMilissegundos;
+                    String hora = dataString.split("T")[1];
+                    return hora.length() >= 8 ? hora.substring(0, 8) : hora;
                 }
                 return dataString;
-            }
-            // 2. Se a API enviar como Array sem formatação (ex: [2026, 6, 29, 19, 19, 50])
-            else if (registradoEm.isJsonArray()) {
+            } else if (registradoEm.isJsonArray()) {
                 JsonArray array = registradoEm.getAsJsonArray();
-                if (array.size() >= 6) { // Assegura que tem horas, minutos e segundos
-                    int hora = array.get(3).getAsInt();
-                    int minuto = array.get(4).getAsInt();
-                    int segundo = array.get(5).getAsInt();
-                    // Formata para manter dois dígitos (ex: 09:05:02)
-                    return String.format("%02d:%02d:%02d", hora, minuto, segundo);
+                if (array.size() >= 6) {
+                    return String.format("%02d:%02d:%02d", array.get(3).getAsInt(), array.get(4).getAsInt(), array.get(5).getAsInt());
                 } else if (array.size() >= 5) {
-                    int hora = array.get(3).getAsInt();
-                    int minuto = array.get(4).getAsInt();
-                    return String.format("%02d:%02d:00", hora, minuto);
+                    return String.format("%02d:%02d", array.get(3).getAsInt(), array.get(4).getAsInt());
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "--:--:--";
+        } catch (Exception ignored) {}
+        return "--:--";
     }
 }

@@ -1,83 +1,43 @@
 package com.example.monitorforno.models;
 
+import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public class SessaoDetalhesDTO {
 
-    // 1. Informações Básicas
     private String id;
-    private String data;
+
+    @SerializedName("inicioSessao")
     private String horarioInicio;
+
+    @SerializedName("fimSessao")
     private String horarioFim;
-    private String duracao;
+
+    @SerializedName("duracaoSegundos")
+    private Long duracaoSegundos;
+
+    @SerializedName("estadoFornoFinal")
     private String estadoFinal;
 
-    // 2. Métricas Calculadas
-    private Double temperaturaMaxima;
-    private Double temperaturaMedia;
-    private Integer quantidadeAlertas;
-    private Integer quantidadeCriticos;
+    @SerializedName("temperaturas")
+    private List<TemperaturaDTO> temperaturas;
 
-    // 3. Dados para o Gráfico (Eixo Y e Eixo X)
-    private List<Float> temperaturasLista;
-    private List<String> horariosLista;
-
-    // 4. Lista de Eventos (Para o RecyclerView)
+    @SerializedName("eventos")
     private List<EventoSessao> eventos;
 
-    // ==========================================
-    // GETTERS (Obrigatórios para o Retrofit ler os dados)
-    // ==========================================
+    // Métricas opcionais (se você for calcular no app ou se a API mandar no futuro)
+    private Double temperaturaMaxima;
+    private Double temperaturaMedia;
 
-    public String getId() {
-        return id;
-    }
+    // Getters
+    public String getId() { return id; }
+    public String getHorarioInicio() { return horarioInicio; }
+    public String getHorarioFim() { return horarioFim; }
+    public Long getDuracaoSegundos() { return duracaoSegundos; }
+    public String getEstadoFinal() { return estadoFinal; }
+    public List<TemperaturaDTO> getTemperaturas() { return temperaturas; }
+    public List<EventoSessao> getEventos() { return eventos; }
 
-    public String getData() {
-        return data;
-    }
-
-    public String getHorarioInicio() {
-        return horarioInicio;
-    }
-
-    public String getHorarioFim() {
-        return horarioFim;
-    }
-
-    public String getDuracao() {
-        return duracao;
-    }
-
-    public String getEstadoFinal() {
-        return estadoFinal;
-    }
-
-    public Double getTemperaturaMaxima() {
-        return temperaturaMaxima != null ? temperaturaMaxima : 0.0;
-    }
-
-    public Double getTemperaturaMedia() {
-        return temperaturaMedia != null ? temperaturaMedia : 0.0;
-    }
-
-    public Integer getQuantidadeAlertas() {
-        return quantidadeAlertas != null ? quantidadeAlertas : 0;
-    }
-
-    public Integer getQuantidadeCriticos() {
-        return quantidadeCriticos != null ? quantidadeCriticos : 0;
-    }
-
-    public List<Float> getTemperaturasLista() {
-        return temperaturasLista;
-    }
-
-    public List<String> getHorariosLista() {
-        return horariosLista;
-    }
-
-    public List<EventoSessao> getEventos() {
-        return eventos;
-    }
+    public Double getTemperaturaMaxima() { return temperaturaMaxima != null ? temperaturaMaxima : 0.0; }
+    public Double getTemperaturaMedia() { return temperaturaMedia != null ? temperaturaMedia : 0.0; }
 }
