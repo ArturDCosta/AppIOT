@@ -138,24 +138,33 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
     }
 
     private void atualizarGrafico(List<Float> valores, List<String> horarios) {
-        if (valores.isEmpty() || valores.size() != horarios.size()) {
+        if (valores == null || valores.isEmpty() || valores.size() != horarios.size()) {
+            chart.setNoDataText("Nenhum dado de histórico encontrado para esta sessão.");
             chart.clear();
             chart.invalidate();
             return;
         }
 
         List<Entry> entries = new ArrayList<>();
+        List<String> horariosFormatados = new ArrayList<>();
+
         for (int i = 0; i < valores.size(); i++) {
             entries.add(new Entry(i, valores.get(i)));
+
+            // Pegamos a hora e cortamos para "HH:mm" igual ao seu gráfico de referência
+            String horaCompleta = horarios.get(i);
+            String horaSemSegundos = (horaCompleta != null && horaCompleta.length() >= 5)
+                    ? horaCompleta.substring(0, 5)
+                    : horaCompleta;
+
+            horariosFormatados.add(horaSemSegundos);
         }
 
-        LineDataSet dataSet = new LineDataSet(entries, "Temperatura (°C)");
-        dataSet.setColor(Color.parseColor("#FF5722"));
-        dataSet.setCircleColor(Color.parseColor("#FF5722"));
-        dataSet.setLineWidth(2.5f);
-        dataSet.setCircleRadius(3f);
-        dataSet.setDrawValues(false);
-        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        LineDataSet dataSet = new LineDataSet(entries, "Histórico");
+        dataSet.setColor(Color.parseColor("#fc9403"));
+        dataSet.setCircleColor(Color.parseColor("#fc9403"));
+        dataSet.setLineWidth(2f);
+        dataSet.setValueTextColor(Color.WHITE);
 
         LineData lineData = new LineData(dataSet);
         chart.setData(lineData);
@@ -163,15 +172,19 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         XAxis eixoX = chart.getXAxis();
         eixoX.setPosition(XAxis.XAxisPosition.BOTTOM);
         eixoX.setGranularity(1f);
-        eixoX.setValueFormatter(new IndexAxisValueFormatter(horarios));
+        eixoX.setValueFormatter(new IndexAxisValueFormatter(horariosFormatados));
         eixoX.setTextColor(Color.WHITE);
 
         chart.getAxisLeft().setTextColor(Color.WHITE);
         chart.getAxisRight().setEnabled(false);
-        chart.getLegend().setTextColor(Color.WHITE);
+
+        // Remove a legenda do gráfico (bolinha com texto "Histórico")
+        chart.getLegend().setEnabled(false);
+
+        // Remove descrições extras do gráfico
         chart.getDescription().setEnabled(false);
 
-        chart.animateX(800);
+        // Atualiza a tela
         chart.invalidate();
     }
 
