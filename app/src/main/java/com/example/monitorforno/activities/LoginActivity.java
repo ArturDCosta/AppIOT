@@ -12,11 +12,14 @@ import com.example.monitorforno.R;
 import com.example.monitorforno.models.EsqueciSenhaDTO;
 import com.example.monitorforno.models.LoginRequestDTO;
 import com.example.monitorforno.models.LoginResponseDTO;
+import com.example.monitorforno.models.SessaoDetalhesDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.List;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -40,25 +43,58 @@ public class LoginActivity extends AppCompatActivity {
 
         sessionManager = new SessionManager(this);
 
-        if (sessionManager.estaLogado()) {
-            irParaMain();
-            return;
-        }
-
         edtEmail       = findViewById(R.id.edtEmail);
         edtSenha       = findViewById(R.id.edtSenha);
         btnEntrar      = findViewById(R.id.btnEntrar);
         txtEsqueciSenha = findViewById(R.id.txtEsqueciSenha);
         txtCadastro    = findViewById(R.id.txtCadastro);
 
+        // Verifica se tem sessão salva. Se tiver, valida a conexão antes de entrar!
+        if (sessionManager.estaLogado()) {
+            validarSessaoEConexao();
+        }
+
         btnEntrar.setOnClickListener(v -> tentarLogin());
-
-        // Clique no Esqueci a Senha
         txtEsqueciSenha.setOnClickListener(v -> abrirDialogEsqueciSenha());
-
         txtCadastro.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, CadastroActivity.class);
             startActivity(intent);
+        });
+    }
+
+    // ========================================================
+    // NOVO MÉTODO: Valida internet e servidor antes de entrar
+    // ========================================================
+    private void validarSessaoEConexao() {
+        btnEntrar.setEnabled(false);
+        btnEntrar.setText("Conectando ao servidor...");
+
+        // Fazemos uma chamada leve só para testar a comunicação
+        RetrofitClient.getApiService(this).minhasSessoes().enqueue(new Callback<List<SessaoDetalhesDTO>>() {
+            @Override
+            public void onResponse(Call<List<SessaoDetalhesDTO>> call, Response<List<SessaoDetalhesDTO>> response) {
+                if (response.isSuccessful()) {
+                    // Servidor online e token válido! Pode entrar.
+                    irParaMain();
+                } else {
+                    // Se deu 401 (token expirado), seu RetrofitClient já vai deslogar automaticamente.
+                    // Para outros erros (ex: 500 servidor com problema), destravamos a tela.
+                    btnEntrar.setEnabled(true);
+                    btnEntrar.setText("Entrar");
+
+                    if (response.code() != 401) {
+                        Toast.makeText(LoginActivity.this, "O servidor retornou um erro (" + response.code() + ").", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<SessaoDetalhesDTO>> call, Throwable t) {
+                // Caiu aqui? Não tem internet ou o Spring Boot está desligado.
+                btnEntrar.setEnabled(true);
+                btnEntrar.setText("Entrar");
+                Toast.makeText(LoginActivity.this, "Servidor offline ou sem conexão. Verifique sua rede.", Toast.LENGTH_LONG).show();
+            }
         });
     }
 
@@ -90,13 +126,11 @@ public class LoginActivity extends AppCompatActivity {
 
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponseDTO dados = response.body();
-                    // Mantive exatamente como estava no seu código original:
                     sessionManager.salvarSessao(dados.getToken(), dados.getId());
 
                     Toast.makeText(LoginActivity.this, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show();
                     irParaMain();
                 } else {
-                    // --- TRATAMENTO CORRETO DOS ERROS VIA CÓDIGO HTTP ---
                     int codigoErro = response.code();
                     Log.e("Login", "Erro da API. Código: " + codigoErro);
 
@@ -170,7 +204,6 @@ public class LoginActivity extends AppCompatActivity {
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(LoginActivity.this, "E-mail enviado! Verifique sua caixa de entrada.", Toast.LENGTH_LONG).show();
-                    // Redireciona para a tela de colar o token
                     Intent intent = new Intent(LoginActivity.this, RedefinirSenhaActivity.class);
                     startActivity(intent);
                 } else {
