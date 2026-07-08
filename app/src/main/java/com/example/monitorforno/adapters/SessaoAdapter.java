@@ -39,7 +39,7 @@ public class SessaoAdapter extends RecyclerView.Adapter<SessaoAdapter.ViewHolder
 
         // 1. Extrai a Data (Dia/Mês/Ano) de dentro de "inicioSessao" (ex: "2026-07-06T14:30:00")
         String dataFormatada = "--/--/----";
-        String inicioSessao = sessao.getHorarioInicio();
+        String inicioSessao = sessao.getFimSessao();
         if (inicioSessao != null && inicioSessao.contains("T")) {
             try {
                 String[] partes = inicioSessao.split("T")[0].split("-");
@@ -63,7 +63,7 @@ public class SessaoAdapter extends RecyclerView.Adapter<SessaoAdapter.ViewHolder
         holder.txtDuracao.setText(minutos + " min");
 
         // 4. Cores do Estado Final
-        String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal() : "FORNO_DESLIGADO";
+        String estado = sessao.getEstadoFornoFinal() != null ? sessao.getEstadoFornoFinal() : "FORNO_DESLIGADO";
         holder.txtEstado.setText(estado.replace("FORNO_", ""));
 
         switch (estado) {

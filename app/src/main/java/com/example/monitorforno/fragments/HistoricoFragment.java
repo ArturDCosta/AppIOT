@@ -48,7 +48,7 @@ public class HistoricoFragment extends Fragment {
     private boolean ordenadoPorMaisRecentes = true;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_historico, container, false);
 
         inicializarViews(view);
@@ -60,7 +60,7 @@ public class HistoricoFragment extends Fragment {
 
     private void inicializarViews(View view) {
         recyclerView = view.findViewById(R.id.recyclerHistorico);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         txtTotalSessoes = view.findViewById(R.id.txtTotalSessoes);
         txtTempoTotal = view.findViewById(R.id.txtTempoTotal);
@@ -88,7 +88,7 @@ public class HistoricoFragment extends Fragment {
             public void afterTextChanged(Editable s) {}
         });
 
-        // DICA BÔNUS: Se quiser que ao dar um clique longo ou duplo no campo abra o calendário:
+        // Clique longo no campo para abrir o calendário nativo
         edtPesquisa.setOnLongClickListener(v -> {
             abrirSeletorDeData();
             return true;
@@ -96,11 +96,15 @@ public class HistoricoFragment extends Fragment {
     }
 
     private void buscarSessoesNaApi() {
-        ApiService apiService = RetrofitClient.getApiService(getContext());
+        if (getContext() == null) return;
+
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
 
         apiService.minhasSessoes().enqueue(new Callback<List<SessaoDetalhesDTO>>() {
             @Override
             public void onResponse(@NonNull Call<List<SessaoDetalhesDTO>> call, @NonNull Response<List<SessaoDetalhesDTO>> response) {
+                if (!isAdded() || getContext() == null) return; // Garante que o Fragment ainda está ativo
+
                 if (response.isSuccessful() && response.body() != null) {
                     listaOriginal = response.body();
                     listaExibida = new ArrayList<>(listaOriginal);
@@ -111,16 +115,15 @@ public class HistoricoFragment extends Fragment {
 
                     calcularEstatisticasGlobais(listaOriginal);
                 } else {
-                    if (getContext() != null) {
-                        Toast.makeText(getContext(), "Erro ao carregar histórico", Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(getContext(), "Erro ao carregar histórico", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<List<SessaoDetalhesDTO>> call, @NonNull Throwable t) {
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), "Falha na conexão", Toast.LENGTH_SHORT).show();
+                if (isAdded() && getContext() != null) {
+                    Log.e("HistoricoFragment", "Falha na API: " + t.getMessage());
+                    Toast.makeText(getContext(), "Falha na conexão com o servidor", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -141,8 +144,9 @@ public class HistoricoFragment extends Fragment {
 
     private void aplicarOrdenacaoNaLista() {
         Collections.sort(listaExibida, (sessao1, sessao2) -> {
-            String data1 = sessao1.getHorarioInicio() != null ? sessao1.getHorarioInicio() : "";
-            String data2 = sessao2.getHorarioInicio() != null ? sessao2.getHorarioInicio() : "";
+            // NOTA: Se alterou os nomes no DTO, mude aqui para getInicioSessao()
+            String data1 = sessao1.getInicioSessao() != null ? sessao1.getInicioSessao() : "";
+            String data2 = sessao2.getInicioSessao() != null ? sessao2.getInicioSessao() : "";
 
             return ordenadoPorMaisRecentes ? data2.compareTo(data1) : data1.compareTo(data2);
         });
@@ -160,13 +164,14 @@ public class HistoricoFragment extends Fragment {
             String busca = texto.toLowerCase().trim();
 
             for (SessaoDetalhesDTO sessao : listaOriginal) {
-                String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal().toLowerCase() : "";
-                String inicioISO = sessao.getHorarioInicio() != null ? sessao.getHorarioInicio() : "";
+                // NOTA: Se alterou os nomes no DTO, mude aqui para getEstadoFornoFinal() e getInicioSessao()
+                String estado = sessao.getEstadoFornoFinal() != null ? sessao.getEstadoFornoFinal().toLowerCase() : "";
+                String inicioISO = sessao.getInicioSessao() != null ? sessao.getInicioSessao() : "";
 
                 // 1. Converte a data ISO (ex: "2026-07-06T14:30:00") para o padrão BR ("06/07/2026")
                 String dataBR = converterIsoParaBr(inicioISO);
 
-                // 2. Verifica se a busca bate com o Estado, com a Data ISO ou com a Data Brasileira!
+                // 2. Verifica se a busca coincide com o Estado ou com os formatos de data
                 if (estado.contains(busca) || inicioISO.contains(busca) || dataBR.contains(busca)) {
                     listaExibida.add(sessao);
                 }
@@ -177,7 +182,6 @@ public class HistoricoFragment extends Fragment {
         if (adapter != null) adapter.notifyDataSetChanged();
     }
 
-    // Converte "2026-07-06T14:30" em "06/07/2026" para facilitar a pesquisa do usuário
     private String converterIsoParaBr(String iso) {
         if (iso == null || !iso.contains("T")) return "";
         try {
@@ -190,14 +194,13 @@ public class HistoricoFragment extends Fragment {
     }
 
     // =========================================================================
-    // CALENDÁRIO NATIVO (Opcional - Pode chamar ao clicar num botão ou segurar o campo)
+    // CALENDÁRIO NATIVO
     // =========================================================================
     private void abrirSeletorDeData() {
         if (getContext() == null) return;
 
         Calendar calc = Calendar.getInstance();
-        DatePickerDialog dialog = new DatePickerDialog(getContext(), (view, ano, mes, dia) -> {
-            // Formata a data escolhida no calendário para "DD/MM/YYYY" (ex: "06/07/2026")
+        DatePickerDialog dialog = new DatePickerDialog(requireContext(), (view, ano, mes, dia) -> {
             String dataEscolhida = String.format("%02d/%02d/%04d", dia, (mes + 1), ano);
             edtPesquisa.setText(dataEscolhida);
         }, calc.get(Calendar.YEAR), calc.get(Calendar.MONTH), calc.get(Calendar.DAY_OF_MONTH));
@@ -240,6 +243,11 @@ public class HistoricoFragment extends Fragment {
 
         txtTotalSessoes.setText("Total de Sessões: " + totalSessoes);
         txtMaiorTemperatura.setText("Maior Temperatura: " + Math.round(maiorTempGlobal) + "°C");
-        txtTempoTotal.setText(horas > 0 ? "Tempo Total: " + horas + "h " + minutos + "min" : "Tempo Total: " + minutos + "min");
+
+        if (horas > 0) {
+            txtTempoTotal.setText("Tempo Total: " + horas + "h " + minutos + "min");
+        } else {
+            txtTempoTotal.setText("Tempo Total: " + minutos + "min");
+        }
     }
 }

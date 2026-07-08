@@ -94,13 +94,13 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
 
     private void atualizarTela(SessaoDetalhesDTO sessao) {
         txtTituloSessao.setText("Resumo da Sessão");
-        txtInicio.setText("Início: " + formatarHoraSemSegundos(sessao.getHorarioInicio()));
-        txtFim.setText("Fim: " + formatarHoraSemSegundos(sessao.getHorarioFim()));
+        txtInicio.setText("Início: " + formatarHoraSemSegundos(sessao.getInicioSessao()));
+        txtFim.setText("Fim: " + formatarHoraSemSegundos(sessao.getFimSessao()));
 
         long duracaoMin = (sessao.getDuracaoSegundos() != null) ? (sessao.getDuracaoSegundos() / 60) : 0;
         txtDuracao.setText("Duração: " + duracaoMin + " min");
 
-        String estado = sessao.getEstadoFinal() != null ? sessao.getEstadoFinal() : "DESLIGADO";
+        String estado = sessao.getEstadoFornoFinal() != null ? sessao.getEstadoFornoFinal() : "DESLIGADO";
         txtEstadoFinal.setText(estado.replace("FORNO_", ""));
 
         // Extrai dados da lista de temperaturas vinda do Spring Boot
