@@ -3,6 +3,8 @@ package com.example.monitorforno.fragments;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -56,32 +58,44 @@ public class DashboardFragment extends Fragment {
     private MaterialButton btnEscaneadorQr;
     private List<FornoResponseDTO> listaDeFornosDoUsuario = new ArrayList<>();
 
-    // 1. OUVINTE DO ZXING PARA CAPTURAR O RESULTADO DO QR CODE
+    // =====================================================================
+    // 1. HANDLER E RUNNABLE (Para atualização automática a cada 5 segundos)
+    // =====================================================================
+    private Handler autoUpdateHandler = new Handler(Looper.getMainLooper());
+    private Runnable autoUpdateRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // Verifica se há algum forno selecionado no Spinner
+            if (spinnerFornos != null && spinnerFornos.getSelectedItem() != null) {
+                FornoResponseDTO fornoSelecionado = (FornoResponseDTO) spinnerFornos.getSelectedItem();
+
+                // Recarrega os dados do forno atual de forma "silenciosa" (sem loadings intrusivos)
+                carregarDadosDoDashboard(fornoSelecionado.getId(), fornoSelecionado.getNome());
+                carregarAlertasReaisNoDashboard(fornoSelecionado.getId());
+            }
+            // Agenda para rodar novamente daqui a 5000ms
+            autoUpdateHandler.postDelayed(this, 5000);
+        }
+    };
+
     private final ActivityResultLauncher<ScanOptions> leitorDeQrCode = registerForActivityResult(
             new ScanContract(),
             result -> {
-                // Evita crash se o fragmento já não estiver ligado ao ecrã
                 if (getContext() == null) return;
 
                 if (result.getContents() == null) {
                     Toast.makeText(getContext(), "Leitura cancelada", Toast.LENGTH_SHORT).show();
                 } else {
-                    // O .trim() remove espaços vazios ou quebras de linha que possam vir no QR Code
                     String conteudo = result.getContents().trim();
-
                     try {
                         JSONObject jsonObject = new JSONObject(conteudo);
-
-                        // Verifica se as chaves realmente existem dentro do JSON antes de as extrair
                         if (jsonObject.has("serialNumber") && jsonObject.has("pinSeguranca")) {
                             String serial = jsonObject.getString("serialNumber");
                             String pin = jsonObject.getString("pinSeguranca");
-
                             enviarVinculoParaApi(serial, pin);
                         } else {
                             Toast.makeText(getContext(), "QR Code não pertence a um forno válido.", Toast.LENGTH_LONG).show();
                         }
-
                     } catch (JSONException e) {
                         Log.e("DEBUG_QR", "Erro ao ler JSON: " + e.getMessage());
                         Toast.makeText(getContext(), "Formato de QR Code Inválido.", Toast.LENGTH_SHORT).show();
@@ -95,7 +109,6 @@ public class DashboardFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
-        // Mapeando componentes
         txtNomeForno = view.findViewById(R.id.txtNomeForno);
         txtSistema = view.findViewById(R.id.txtSistema);
         txtEstadoSistema = view.findViewById(R.id.txtEstadoSistema);
@@ -115,7 +128,6 @@ public class DashboardFragment extends Fragment {
 
         sessionManager = new com.example.monitorforno.utils.SessionManager(requireContext());
 
-        // Prepara o visual do Recycler de alertas para receber os dados
         recyclerAlertas.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerAlertas.addItemDecoration(new CustomDivisor(getContext()));
 
@@ -123,10 +135,26 @@ public class DashboardFragment extends Fragment {
 
         btnEscaneadorQr.setOnClickListener(v -> abrirLeitorQrCode());
 
-        // Carrega a listagem de fornos associados ao usuário
         carregarListaDeFornos();
 
         return view;
+    }
+
+    // =====================================================================
+    // 2. LIGAR E DESLIGAR O CRONÔMETRO (Otimização de Bateria)
+    // =====================================================================
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Quando o Dashboard abrir ou o usuário voltar para ele, inicia o loop de 5 em 5s
+        autoUpdateHandler.post(autoUpdateRunnable);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Quando o usuário for para outra tela, para as requisições imediatamente
+        autoUpdateHandler.removeCallbacks(autoUpdateRunnable);
     }
 
     private void carregarListaDeFornos() {
@@ -178,6 +206,9 @@ public class DashboardFragment extends Fragment {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 FornoResponseDTO fornoSelecionado = listaDeFornosDoUsuario.get(position);
                 sessionManager.salvarFornoSelecionado(fornoSelecionado.getId());
+
+                // Dispara uma carga manual assim que o forno é trocado,
+                // sem precisar esperar o próximo "tick" de 5 segundos.
                 carregarDadosDoDashboard(fornoSelecionado.getId(), fornoSelecionado.getNome());
                 carregarAlertasReaisNoDashboard(fornoSelecionado.getId());
             }
@@ -236,7 +267,8 @@ public class DashboardFragment extends Fragment {
     private void vincularDadosNaTela(DashboardDTO dados, String nomeForno) {
         txtNomeForno.setText(nomeForno != null ? nomeForno : "--");
 
-        if (dados == null) {
+        // REGRA: Se os dados forem nulos OU se o estado do forno for DESLIGADO, limpamos o painel (exceto alertas)
+        if (dados == null || dados.getEstadoForno() == null || "FORNO_DESLIGADO".equals(dados.getEstadoForno())) {
             txtTemperaturaAtual.setText("--");
             txtAtual.setText("--");
             txtUltima.setText("--");
@@ -251,6 +283,7 @@ public class DashboardFragment extends Fragment {
             return;
         }
 
+        // Caso contrário (Fornos ativos: FORNO_AQUECENDO, FORNO_ATIVO, FORNO_ESFRIANDO), renderiza normalmente
         String tempAtualTexto = dados.getTemperaturaAtual() != null ? Math.round(dados.getTemperaturaAtual()) + "°C" : "--";
         String tempUltimaTexto = dados.getTemperaturaUltima() != null ? Math.round(dados.getTemperaturaUltima()) + "°C" : "--";
         txtTemperaturaAtual.setText(tempAtualTexto);
@@ -282,7 +315,7 @@ public class DashboardFragment extends Fragment {
             txtEstadoSistema.setTextColor(Color.GRAY);
         }
 
-        String estadoForno = dados.getEstadoForno() != null ? dados.getEstadoForno() : "FORNO_DESLIGADO";
+        String estadoForno = dados.getEstadoForno();
         txtEstadoForno.setText(estadoForno.replace("_", " "));
 
         switch (estadoForno) {
@@ -295,30 +328,20 @@ public class DashboardFragment extends Fragment {
             case "FORNO_ESFRIANDO":
                 cardEstadoForno.setCardBackgroundColor(getResources().getColor(R.color.forno_esfriando));
                 break;
-            default:
-            case "FORNO_DESLIGADO":
-                cardEstadoForno.setCardBackgroundColor(getResources().getColor(R.color.forno_desligado));
-                break;
         }
     }
 
-    // 2. NOVA FUNÇÃO QUE ABRE O SCANNER DO ZXING
     private void abrirLeitorQrCode() {
         ScanOptions options = new ScanOptions();
         options.setPrompt("Aponte para o QR Code do forno");
         options.setBeepEnabled(true);
-
-        // 1. Mude para true para impedir que a tela gire se o usuário deitar o celular
         options.setOrientationLocked(true);
-
-        // 2. Chame a SUA nova classe, e não a padrão do ZXing!
         options.setCaptureActivity(com.example.monitorforno.activities.CustomScannerActivity.class);
-
         leitorDeQrCode.launch(options);
     }
 
     private void enviarVinculoParaApi(String serial, String pin) {
-        if (getContext() == null) return; // Prevenção de crash
+        if (getContext() == null) return;
 
         ApiService apiService = RetrofitClient.getApiService(getContext());
         apiService.vincularForno(new VincularFornoDTO(serial, pin)).enqueue(new Callback<Void>() {
@@ -327,18 +350,14 @@ public class DashboardFragment extends Fragment {
                 if (getContext() == null) return;
 
                 if (response.isSuccessful()) {
-                    // Caso 1: O forno não estava vinculado e foi associado agora com sucesso
                     Toast.makeText(getContext(), "Forno vinculado com sucesso!", Toast.LENGTH_SHORT).show();
-                    carregarListaDeFornos(); // Atualiza o Spinner com o novo forno
+                    carregarListaDeFornos();
 
                 } else if (response.code() == 409) {
-                    // Caso 2: O forno já estava vinculado.
-                    // Informamos o usuário e atualizamos a lista para que ele apareça no Spinner
                     Toast.makeText(getContext(), "Este forno já está vinculado à sua conta!", Toast.LENGTH_LONG).show();
                     carregarListaDeFornos();
 
                 } else {
-                    // Outros erros (ex: 400 se o PIN estiver errado, 404 se o serial não existir)
                     Toast.makeText(getContext(), "Erro ao vincular forno. Código: " + response.code(), Toast.LENGTH_LONG).show();
                 }
             }

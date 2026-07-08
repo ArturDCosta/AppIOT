@@ -63,7 +63,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     // ========================================================
-    // NOVO MÉTODO: Valida internet e servidor antes de entrar
+    // Valida serivodor e internet antes de entrar
     // ========================================================
     private void validarSessaoEConexao() {
         btnEntrar.setEnabled(false);
