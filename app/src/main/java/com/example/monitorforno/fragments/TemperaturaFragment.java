@@ -74,7 +74,7 @@ public class TemperaturaFragment extends Fragment {
             @Override
             public void run() {
                 carregarDadosDaApi();
-                handler.postDelayed(this, 3000);
+                handler.postDelayed(this, 1000);
             }
         };
 
