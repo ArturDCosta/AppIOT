@@ -44,7 +44,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Cole o token (código) recebido no seu e-mail e crie uma nova senha."
+                    android:text="Clique no link recebido no seu e-mail e crie uma nova senha."
                     android:textColor="@color/white"
                     android:textAlignment="center"
                     android:textSize="14sp"
