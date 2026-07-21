@@ -32,7 +32,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:text="Temperatura"
-                android:textSize="28sp"
+                android:textSize="24sp"
                 android:textColor="@color/white"
                 android:textStyle="bold"/>
 
