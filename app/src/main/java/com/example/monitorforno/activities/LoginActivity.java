@@ -135,7 +135,7 @@ public class LoginActivity extends AppCompatActivity {
                     Log.e("Login", "Erro da API. Código: " + codigoErro);
 
                     if (codigoErro == 401) {
-                        Toast.makeText(LoginActivity.this, "Senha incorreta. Verifique os dados e tente novamente.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(LoginActivity.this, "Senha ou email incorreto. Verifique os dados e tente novamente.", Toast.LENGTH_LONG).show();
                     } else if (codigoErro == 404) {
                         Toast.makeText(LoginActivity.this, "Esta conta não está cadastrada. Verifique o e-mail.", Toast.LENGTH_LONG).show();
                     } else if (codigoErro == 400) {

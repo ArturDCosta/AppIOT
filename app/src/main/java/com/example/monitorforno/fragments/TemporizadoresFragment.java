@@ -209,7 +209,7 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
             public void onFailure(Call<List<TemporizadorResponseDTO>> call, Throwable t) {
                 // Se entrar aqui, houve falha de rede ou queda do servidor
                 Log.e("DEBUG_FORNO", "Falha de rede ao conectar à API", t);
-                Toast.makeText(getContext(), "Falha de conexão com a API", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Falha de conexão com o servidor", Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -53,7 +53,7 @@
                 android:id="@+id/txtTotalSessoes"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Total de Sessões: 12"
+                android:text="Total de Sessões: --"
                 android:textColor="@color/white"
                 android:textStyle="bold"/>
 
@@ -62,14 +62,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/white"
-                android:text="Tempo Total: 35h 22min"/>
+                android:text="Tempo Total: --"/>
 
             <TextView
                 android:id="@+id/txtMaiorTemperatura"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/white"
-                android:text="Maior Temperatura: 215°C"/>
+                android:text="Maior Temperatura: --"/>
 
         </LinearLayout>
 
