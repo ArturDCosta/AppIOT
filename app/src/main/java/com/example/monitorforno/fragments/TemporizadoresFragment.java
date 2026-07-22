@@ -113,6 +113,17 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
             }
 
             String isoHorarioFim = String.format(Locale.getDefault(), "%04d-%02d-%02dT%s", ano, mes, dia, horaFimSelecionada);
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+                java.util.Date dataSelecionada = sdf.parse(isoHorarioFim);
+
+                if (dataSelecionada != null && dataSelecionada.getTime() <= System.currentTimeMillis()) {
+                    Toast.makeText(getContext(), "O horário do temporizador deve ser no futuro!", Toast.LENGTH_LONG).show();
+                    return; // Interrompe aqui e não envia para a API!
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             TemporizadorRequestDTO request = new TemporizadorRequestDTO(isoHorarioFim);
 
             RetrofitClient.getApiService(getContext()).criarTemporizador(fornoId, request).enqueue(new Callback<Void>() {
@@ -132,7 +143,7 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
                 }
                 @Override
                 public void onFailure(Call<Void> call, Throwable t) {
-                    Toast.makeText(getContext(), "Falha na rede: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Falha na rede", Toast.LENGTH_SHORT).show();
                 }
             });
         });
