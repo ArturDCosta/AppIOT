@@ -92,7 +92,10 @@ public class DashboardFragment extends Fragment {
                         if (jsonObject.has("serialNumber") && jsonObject.has("pinSeguranca")) {
                             String serial = jsonObject.getString("serialNumber");
                             String pin = jsonObject.getString("pinSeguranca");
-                            enviarVinculoParaApi(serial, pin);
+
+                            // EM VEZ DE CHAMAR A API DIRETO, ABRE O DIALOG
+                            exibirDialogVincularForno(serial, pin);
+
                         } else {
                             Toast.makeText(getContext(), "QR Code não pertence a um forno válido.", Toast.LENGTH_LONG).show();
                         }
@@ -340,11 +343,13 @@ public class DashboardFragment extends Fragment {
         leitorDeQrCode.launch(options);
     }
 
-    private void enviarVinculoParaApi(String serial, String pin) {
+    // Agora recebe o nome também!
+    private void enviarVinculoParaApi(String serial, String pin, String nome) {
         if (getContext() == null) return;
 
         ApiService apiService = RetrofitClient.getApiService(getContext());
-        apiService.vincularForno(new VincularFornoDTO(serial, pin)).enqueue(new Callback<Void>() {
+        // Incluindo o nome na criação do DTO
+        apiService.vincularForno(new VincularFornoDTO(serial, pin, nome)).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (getContext() == null) return;
@@ -394,6 +399,46 @@ public class DashboardFragment extends Fragment {
 
         cardTemperaturaAtual.setOnClickListener(abrirTemperatura);
         cardUltimaTemperatura.setOnClickListener(abrirTemperatura);
+    }
+
+    private void exibirDialogVincularForno(String serial, String pin) {
+        if (getContext() == null) return;
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getContext());
+        View view = getLayoutInflater().inflate(R.layout.dialog_vincular_forno, null);
+
+        TextView txtSerial = view.findViewById(R.id.txtSerialDialog);
+        TextView txtPin = view.findViewById(R.id.txtPinDialog);
+        com.google.android.material.textfield.TextInputEditText edtNome = view.findViewById(R.id.edtNomeFornoDialog);
+        MaterialButton btnVincular = view.findViewById(R.id.btnConfirmarVinculo);
+        MaterialButton btnCancelar = view.findViewById(R.id.btnCancelarVinculo);
+
+        txtSerial.setText("Serial: " + serial);
+        txtPin.setText("PIN: " + pin);
+
+        builder.setView(view);
+        android.app.AlertDialog dialog = builder.create();
+
+        // Fundo transparente para respeitar as bordas arredondadas (caso configure no XML no futuro)
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnVincular.setOnClickListener(v -> {
+            String nome = edtNome.getText() != null ? edtNome.getText().toString().trim() : "";
+
+            if (nome.isEmpty()) {
+                edtNome.setError("Dê um nome para identificar o forno");
+                return;
+            }
+
+            enviarVinculoParaApi(serial, pin, nome);
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
     private String formatarTemporizador(String dataIso) {
