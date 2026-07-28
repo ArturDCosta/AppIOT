@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,6 +27,7 @@ import com.example.monitorforno.adapters.EventoAdapter;
 import com.example.monitorforno.models.ApiService;
 import com.example.monitorforno.models.DashboardDTO;
 import com.example.monitorforno.models.EventoDTO;
+import com.example.monitorforno.models.FornoAtualizarDTO;
 import com.example.monitorforno.models.FornoResponseDTO;
 import com.example.monitorforno.models.VincularFornoDTO;
 import com.example.monitorforno.network.RetrofitClient;
@@ -53,6 +55,7 @@ public class DashboardFragment extends Fragment {
     private TextView txtNomeForno, txtSistema, txtEstadoSistema, txtTemperaturaAtual, txtEstadoForno, txtAtual, txtUltima, txtTempoLigado, txtTemporizador;
     private MaterialCardView cardEstadoForno, cardTemperaturaAtual, cardUltimaTemperatura;
     private RecyclerView recyclerAlertas;
+    private ImageView btnEditarNomeForno;
 
     private Spinner spinnerFornos;
     private MaterialButton btnEscaneadorQr;
@@ -139,6 +142,9 @@ public class DashboardFragment extends Fragment {
         btnEscaneadorQr.setOnClickListener(v -> abrirLeitorQrCode());
 
         carregarListaDeFornos();
+
+        btnEditarNomeForno = view.findViewById(R.id.btnEditarNomeForno);
+        btnEditarNomeForno.setOnClickListener(v -> abrirDialogEditarNome());
 
         return view;
     }
@@ -439,6 +445,78 @@ public class DashboardFragment extends Fragment {
         });
 
         dialog.show();
+    }
+
+    private void abrirDialogEditarNome() {
+        if (getContext() == null || spinnerFornos == null || spinnerFornos.getSelectedItem() == null) {
+            Toast.makeText(getContext(), "Nenhum forno selecionado para editar.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FornoResponseDTO fornoSelecionado = (FornoResponseDTO) spinnerFornos.getSelectedItem();
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getContext());
+        View view = getLayoutInflater().inflate(R.layout.dialog_editar_nome_forno, null);
+
+        com.google.android.material.textfield.TextInputEditText edtNovoNome = view.findViewById(R.id.edtNovoNomeForno);
+        MaterialButton btnSalvar = view.findViewById(R.id.btnSalvarEdicao);
+        MaterialButton btnCancelar = view.findViewById(R.id.btnCancelarEdicao);
+
+        edtNovoNome.setText(fornoSelecionado.getNome());
+
+        builder.setView(view);
+        android.app.AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnSalvar.setOnClickListener(v -> {
+            String novoNome = edtNovoNome.getText() != null ? edtNovoNome.getText().toString().trim() : "";
+
+            if (novoNome.isEmpty()) {
+                edtNovoNome.setError("O nome não pode ser vazio");
+                return;
+            }
+
+            // Passamos o Serial Number do forno selecionado e o novo nome
+            enviarAtualizacaoNomeApi(fornoSelecionado.getSerialNumber(), novoNome);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void enviarAtualizacaoNomeApi(String serialNumber, String novoNome) {
+        if (getContext() == null) return;
+
+        ApiService apiService = RetrofitClient.getApiService(getContext());
+
+        FornoAtualizarDTO dto = new FornoAtualizarDTO(serialNumber, novoNome);
+
+        apiService.atualizarNomeForno(dto).enqueue(new Callback<FornoResponseDTO>() {
+            @Override
+            public void onResponse(Call<FornoResponseDTO> call, Response<FornoResponseDTO> response) {
+                if (getContext() == null) return;
+
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Nome atualizado com sucesso!", Toast.LENGTH_SHORT).show();
+                    // Recarrega a lista para atualizar o Spinner e a tela principal
+                    carregarListaDeFornos();
+                } else {
+                    Toast.makeText(getContext(), "Erro ao atualizar nome. Código: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FornoResponseDTO> call, Throwable t) {
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "Falha de conexão com o servidor.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     private String formatarTemporizador(String dataIso) {

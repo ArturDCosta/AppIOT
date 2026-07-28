@@ -75,6 +75,9 @@ public interface ApiService {
     @GET("v1/fornos/meus")
     Call<List<FornoResponseDTO>> buscarMeusFornos();
 
+    @PUT("v1/fornos/atualizar-forno")
+    Call<FornoResponseDTO> atualizarNomeForno (@Body FornoAtualizarDTO dto);
+
     //alertas
     @GET("v1/eventos/fornos/{fornoId}")
     Call<List<EventoDTO>> getAlertasDoForno(@Path("fornoId") String fornoId);
