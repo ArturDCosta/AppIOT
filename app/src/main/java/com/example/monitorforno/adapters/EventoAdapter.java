@@ -1,9 +1,9 @@
 package com.example.monitorforno.adapters;
 
-import android.widget.TextView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -62,29 +62,13 @@ public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.EventoView
         holder.txtTipoEvento.setText(descricaoExibicao);
 
         // =========================================================================
-        // CORREÇÃO: Tratando o campo criadoEm que vem do LocalDateTime do Spring
+        // FORMATANDO PARA: "dd/MM/yyyy - HH:mm"
         // =========================================================================
-        String dataOriginal = evento.getCriadoEm();
-        String horarioExibicao = "--:--";
-
-        if (dataOriginal != null) {
-            if (dataOriginal.contains("T")) {
-                try {
-                    // Separa "2026-06-30T14:45:00" em ["2026-06-30", "14:45:00"]
-                    String[] partes = dataOriginal.split("T");
-                    // Pega apenas os 5 primeiros caracteres do horário ("14:45")
-                    horarioExibicao = partes[1].substring(0, 5);
-                } catch (Exception e) {
-                    horarioExibicao = dataOriginal; // Fallback caso a string venha diferente
-                }
-            } else {
-                horarioExibicao = dataOriginal;
-            }
-        }
-        holder.txtHorarioEvento.setText(horarioExibicao);
+        String dataHoraFormatada = formatarDataHora(evento.getCriadoEm());
+        holder.txtHorarioEvento.setText(dataHoraFormatada);
         // =========================================================================
 
-        // Configuração de Cores (Mantida a sua lógica original perfeita)
+        // Configuração de Cores
         if (descricaoExibicao.equals("Sistema entrou em alerta")) {
             holder.txtTipoEvento.setTextColor(holder.itemView.getContext().getColor(R.color.alerta_laranja));
         } else if (descricaoExibicao.equals("Estado crítico detectado") || descricaoExibicao.equals("Estado crítico")) {
@@ -99,6 +83,27 @@ public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.EventoView
     @Override
     public int getItemCount() {
         return eventos != null ? eventos.size() : 0;
+    }
+
+    private String formatarDataHora(String dataOriginal) {
+        if (dataOriginal == null || !dataOriginal.contains("T")) {
+            return "--/--/---- - --:--";
+        }
+        try {
+            // Separa "2026-07-28T16:01:00" em ["2026-07-28", "16:01:00"]
+            String[] partes = dataOriginal.split("T");
+
+            // Separa "2026-07-28" em ["2026", "07", "28"]
+            String[] dataPartes = partes[0].split("-");
+            String dataFormatada = dataPartes[2] + "/" + dataPartes[1] + "/" + dataPartes[0];
+
+            // Pega "16:01"
+            String horaFormatada = partes[1].substring(0, 5);
+
+            return dataFormatada + " - " + horaFormatada;
+        } catch (Exception e) {
+            return dataOriginal;
+        }
     }
 
     static class EventoViewHolder extends RecyclerView.ViewHolder {

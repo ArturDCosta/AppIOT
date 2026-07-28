@@ -20,6 +20,7 @@ import com.example.monitorforno.models.EventoDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.utils.SessionManager;
 
+import java.util.Collections;
 import java.util.List;
 
 import retrofit2.Call;
@@ -63,12 +64,21 @@ public class AlertasFragment extends Fragment {
 
         ApiService apiService = RetrofitClient.getApiService(requireContext());
 
-        // Chamada da rota que criamos no Passo 2
         apiService.getAlertasDoForno(fornoId).enqueue(new Callback<List<EventoDTO>>() {
             @Override
             public void onResponse(@NonNull Call<List<EventoDTO>> call, @NonNull Response<List<EventoDTO>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<EventoDTO> eventosDaApi = response.body();
+
+                    // -------------------------------------------------------------
+                    // 1. ORDENAÇÃO: Do mais recente para o mais antigo
+                    // -------------------------------------------------------------
+                    Collections.sort(eventosDaApi, (e1, e2) -> {
+                        if (e1.getCriadoEm() == null) return 1;
+                        if (e2.getCriadoEm() == null) return -1;
+                        // Comparação invertida (e2 vs e1) para ordem decrescente
+                        return e2.getCriadoEm().compareTo(e1.getCriadoEm());
+                    });
 
                     // Preenche a lista na tela
                     EventoAdapter adapter = new EventoAdapter(eventosDaApi);
@@ -100,15 +110,8 @@ public class AlertasFragment extends Fragment {
         int countAlertas = 0;
         int countCriticos = 0;
 
-        // Pega o criadoEm da API no lugar do antigo getHorario()
-        String dataHoraUltimo = eventos.get(0).getCriadoEm();
-
-        // Opcional: Para formatar e remover o "T" da data/hora que vem do LocalDateTime
-        if (dataHoraUltimo != null && dataHoraUltimo.contains("T")) {
-            // Separa apenas a hora (HH:mm:ss) ou formata como preferir
-            String[] partes = dataHoraUltimo.split("T");
-            dataHoraUltimo = partes[1].substring(0, 5); // Pega apenas HH:mm
-        }
+        // Como a lista foi ordenada, o índice 0 é o evento mais recente
+        String dataHoraUltimo = formatarDataHora(eventos.get(0).getCriadoEm());
 
         for (EventoDTO evento : eventos) {
             if (evento.getTipo() != null) {
@@ -122,12 +125,34 @@ public class AlertasFragment extends Fragment {
 
         txtTotalAlertas.setText("Total de Alertas: " + countAlertas);
         txtTotalCriticos.setText("Eventos Críticos: " + countCriticos);
-        txtUltimoEvento.setText("Último Evento: " + (dataHoraUltimo != null ? dataHoraUltimo : "--:--"));
+        txtUltimoEvento.setText("Último Evento: " + dataHoraUltimo);
     }
 
     private void atualizarEstatisticasVazias() {
         txtTotalAlertas.setText("Total de Alertas: 0");
         txtTotalCriticos.setText("Eventos Críticos: 0");
-        txtUltimoEvento.setText("Último Evento: --:--");
+        txtUltimoEvento.setText("Último Evento: --/--/---- - --:--");
+    }
+
+    // Método auxiliar para formatar no padrão "dd/MM/yyyy - HH:mm"
+    private String formatarDataHora(String dataOriginal) {
+        if (dataOriginal == null || !dataOriginal.contains("T")) {
+            return "--/--/---- - --:--";
+        }
+        try {
+            // Separa "2026-07-28T16:01:00" em ["2026-07-28", "16:01:00"]
+            String[] partes = dataOriginal.split("T");
+
+            // Separa "2026-07-28" em ["2026", "07", "28"]
+            String[] dataPartes = partes[0].split("-");
+            String dataFormatada = dataPartes[2] + "/" + dataPartes[1] + "/" + dataPartes[0];
+
+            // Pega "16:01"
+            String horaFormatada = partes[1].substring(0, 5);
+
+            return dataFormatada + " - " + horaFormatada;
+        } catch (Exception e) {
+            return dataOriginal;
+        }
     }
 }
