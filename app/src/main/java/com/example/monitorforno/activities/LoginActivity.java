@@ -82,9 +82,32 @@ public class LoginActivity extends AppCompatActivity {
                     btnEntrar.setEnabled(true);
                     btnEntrar.setText("Entrar");
 
-                    if (response.code() != 401) {
-                        Toast.makeText(LoginActivity.this, "O servidor retornou um erro (" + response.code() + ").", Toast.LENGTH_SHORT).show();
+                    String mensagemErro;
+
+                    switch (response.code()) {
+                        case 400:
+                            mensagemErro = "Formato inválido. Verifique se digitou o e-mail e a senha corretamente.";
+                            break;
+                        case 403:
+                            mensagemErro = "E-mail ou senha incorretos. Tente novamente.";
+                            break;
+                        case 404:
+                            mensagemErro = "Servidor não encontrado. Verifique se o aplicativo está atualizado.";
+                            break;
+                        case 408:
+                            mensagemErro = "Tempo de conexão esgotado. Verifique sua internet.";
+                            break;
+                        case 500:
+                        case 502:
+                        case 503:
+                            mensagemErro = "Problema interno no servidor. Nossa equipe já está verificando, tente mais tarde.";
+                            break;
+                        default:
+                            mensagemErro = "Erro inesperado ao conectar (Código: " + response.code() + ").";
+                            break;
                     }
+
+                    Toast.makeText(LoginActivity.this, mensagemErro, Toast.LENGTH_LONG).show();
                 }
             }
 
