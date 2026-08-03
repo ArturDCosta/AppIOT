@@ -17,9 +17,11 @@ import androidx.fragment.app.Fragment;
 import com.example.monitorforno.R;
 import com.example.monitorforno.activities.LoginActivity;
 import com.example.monitorforno.models.ApiService;
+import com.example.monitorforno.models.ConfirmarTrocaEmailDTO;
 import com.example.monitorforno.models.FotoPerfilRequestDTO;
 import com.example.monitorforno.models.FotoPerfilResponseDTO;
 import com.example.monitorforno.models.NovaSenhaLogadoDTO;
+import com.example.monitorforno.models.SolicitarTrocaEmailDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.models.PerfilDTO;
 import com.example.monitorforno.utils.SessionManager;
@@ -68,6 +70,7 @@ public class PerfilFragment extends Fragment {
         imgFotoPerfil = view.findViewById(R.id.imgFotoPerfil);
         cardIconeEdicao = view.findViewById(R.id.cardIconeEdicao);
 
+        MaterialButton btnAlterarEmail = view.findViewById(R.id.btnAlterarEmail);
         MaterialButton btnAlterarSenha = view.findViewById(R.id.btnAlterarSenha);
         MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
 
@@ -77,6 +80,7 @@ public class PerfilFragment extends Fragment {
 
         // 3. Ações dos botões e cliques
         btnAlterarSenha.setOnClickListener(v -> exibirDialogAlterarSenha());
+        btnAlterarEmail.setOnClickListener(v -> exibirDialogAlterarEmail());
 
         // CORREÇÃO: Vincula o clique no container da foto para abrir a galeria
         if (layoutFotoPerfil != null) {
@@ -131,6 +135,119 @@ public class PerfilFragment extends Fragment {
             public void onFailure(Call<PerfilDTO> call, Throwable t) {
                 Log.e("API_PERFIL", "Falha na comunicação: " + t.getMessage());
                 Toast.makeText(getContext(), "Erro de conexão com servidor.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private String novoEmailPendente = ""; // Armazena o e-mail caso precisemos atualizar a tela no final
+
+    private void exibirDialogAlterarEmail() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_alterar_email, null);
+        builder.setView(dialogView);
+
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        // Mapeia os componentes do dialog
+        TextView txtTitulo = dialogView.findViewById(R.id.txtTituloDialogEmail);
+        View layoutEtapaEmail = dialogView.findViewById(R.id.layoutEtapaEmail);
+        View layoutEtapaCodigo = dialogView.findViewById(R.id.layoutEtapaCodigo);
+
+        com.google.android.material.textfield.TextInputEditText edtNovoEmail = dialogView.findViewById(R.id.edtNovoEmail);
+        com.google.android.material.textfield.TextInputEditText edtCodigo = dialogView.findViewById(R.id.edtCodigo);
+
+        com.google.android.material.button.MaterialButton btnCancelarEmail = dialogView.findViewById(R.id.btnCancelarEmail);
+        com.google.android.material.button.MaterialButton btnEnviarCodigo = dialogView.findViewById(R.id.btnEnviarCodigo);
+
+        com.google.android.material.button.MaterialButton btnCancelarCodigo = dialogView.findViewById(R.id.btnCancelarCodigo);
+        com.google.android.material.button.MaterialButton btnConfirmarCodigo = dialogView.findViewById(R.id.btnConfirmarCodigo);
+
+        // Ações de Cancelar
+        btnCancelarEmail.setOnClickListener(v -> dialog.dismiss());
+        btnCancelarCodigo.setOnClickListener(v -> dialog.dismiss());
+
+        // Ação 1: Enviar o novo e-mail para a API disparar o código
+        btnEnviarCodigo.setOnClickListener(v -> {
+            String emailDigitado = edtNovoEmail.getText().toString().trim();
+
+            if (emailDigitado.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(emailDigitado).matches()) {
+                Toast.makeText(getContext(), "Insira um e-mail válido.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            novoEmailPendente = emailDigitado;
+            solicitarCodigoParaEmail(novoEmailPendente, layoutEtapaEmail, layoutEtapaCodigo, txtTitulo);
+        });
+
+        // Ação 2: Confirmar o código de 6 dígitos
+        btnConfirmarCodigo.setOnClickListener(v -> {
+            String codigoDigitado = edtCodigo.getText().toString().trim();
+
+            if (codigoDigitado.length() != 6) {
+                Toast.makeText(getContext(), "O código deve conter 6 dígitos.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            confirmarTrocaDeEmail(codigoDigitado, dialog);
+        });
+
+        dialog.show();
+    }
+
+    private void solicitarCodigoParaEmail(String novoEmail, View etapa1, View etapa2, TextView titulo) {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        SolicitarTrocaEmailDTO dto = new SolicitarTrocaEmailDTO(novoEmail);
+
+        apiService.enviarCodigoRedefinirEmail(dto).enqueue(new Callback<okhttp3.ResponseBody>() {
+            @Override
+            public void onResponse(Call<okhttp3.ResponseBody> call, Response<okhttp3.ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Código enviado para o e-mail atual!", Toast.LENGTH_LONG).show();
+
+                    // Altera a visibilidade para mostrar a tela de inserir o código
+                    etapa1.setVisibility(View.GONE);
+                    etapa2.setVisibility(View.VISIBLE);
+                    titulo.setText("Confirmar Código OTP");
+                } else {
+                    Toast.makeText(getContext(), "Erro ao solicitar código. Tente novamente.", Toast.LENGTH_SHORT).show();
+                    Log.e("API_EMAIL", "Erro HTTP: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<okhttp3.ResponseBody> call, Throwable t) {
+                Toast.makeText(getContext(), "Erro de conexão com o servidor.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void confirmarTrocaDeEmail(String codigo, android.app.AlertDialog dialog) {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        ConfirmarTrocaEmailDTO dto = new ConfirmarTrocaEmailDTO(codigo);
+
+        apiService.verificarCodigoRedefinirEmail(dto).enqueue(new Callback<okhttp3.ResponseBody>() {
+            @Override
+            public void onResponse(Call<okhttp3.ResponseBody> call, Response<okhttp3.ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "E-mail alterado com sucesso!", Toast.LENGTH_LONG).show();
+
+                    // Atualiza a tela do usuário para refletir o novo e-mail instantaneamente
+                    txtEmailPerfil.setText(novoEmailPendente);
+                    txtEmail.setText(novoEmailPendente);
+
+                    dialog.dismiss(); // Fecha o popup
+                } else {
+                    Toast.makeText(getContext(), "Código inválido ou expirado.", Toast.LENGTH_LONG).show();
+                    Log.e("API_EMAIL", "Erro na confirmação: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<okhttp3.ResponseBody> call, Throwable t) {
+                Toast.makeText(getContext(), "Erro de conexão com o servidor.", Toast.LENGTH_SHORT).show();
             }
         });
     }

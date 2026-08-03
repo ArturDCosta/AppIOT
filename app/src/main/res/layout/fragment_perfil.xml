@@ -156,10 +156,19 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAlterarSenha"
+            android:id="@+id/btnAlterarEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            app:backgroundTint="@color/primary_green_dark"
+            android:textColor="@color/white"
+            android:text="Alterar E-mail"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAlterarSenha"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             app:backgroundTint="@color/primary_green_dark"
             android:textColor="@color/white"
             android:text="Alterar Senha"/>

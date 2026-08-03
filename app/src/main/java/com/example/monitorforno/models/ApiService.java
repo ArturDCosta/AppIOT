@@ -121,4 +121,13 @@ public interface ApiService {
 
     @PUT("v1/usuario/foto-perfil/update-img")
     Call<FotoPerfilResponseDTO> updateFotoPerfil(@Body FotoPerfilRequestDTO dto);
+
+    // ==========================================
+    // ALTERAÇÃO DE E-MAIL
+    // ==========================================
+    @POST("v1/auth/enviar-codigo-redefinir-email")
+    Call<okhttp3.ResponseBody> enviarCodigoRedefinirEmail(@Body SolicitarTrocaEmailDTO dto);
+
+    @POST("v1/auth/verificar-codigo-redefinir-email")
+    Call<okhttp3.ResponseBody> verificarCodigoRedefinirEmail(@Body ConfirmarTrocaEmailDTO dto);
 }
