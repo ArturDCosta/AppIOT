@@ -20,6 +20,7 @@ import com.example.monitorforno.models.ApiService;
 import com.example.monitorforno.models.FotoPerfilRequestDTO;
 import com.example.monitorforno.models.FotoPerfilResponseDTO;
 import com.example.monitorforno.models.NovaSenhaLogadoDTO;
+import com.example.monitorforno.models.SolicitarTrocaEmailDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.models.PerfilDTO;
 import com.example.monitorforno.utils.SessionManager;
@@ -68,6 +69,7 @@ public class PerfilFragment extends Fragment {
         imgFotoPerfil = view.findViewById(R.id.imgFotoPerfil);
         cardIconeEdicao = view.findViewById(R.id.cardIconeEdicao);
 
+        MaterialButton btnAlterarEmail = view.findViewById(R.id.btnAlterarEmail);
         MaterialButton btnAlterarSenha = view.findViewById(R.id.btnAlterarSenha);
         MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
 
@@ -77,6 +79,7 @@ public class PerfilFragment extends Fragment {
 
         // 3. Ações dos botões e cliques
         btnAlterarSenha.setOnClickListener(v -> exibirDialogAlterarSenha());
+        btnAlterarEmail.setOnClickListener(v -> exibirDialogAlterarEmail());
 
         // CORREÇÃO: Vincula o clique no container da foto para abrir a galeria
         if (layoutFotoPerfil != null) {
@@ -133,6 +136,76 @@ public class PerfilFragment extends Fragment {
                 Toast.makeText(getContext(), "Erro de conexão com servidor.", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void exibirDialogAlterarEmail() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_alterar_email, null);
+        builder.setView(dialogView);
+
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        com.google.android.material.textfield.TextInputEditText edtSenhaAtual = dialogView.findViewById(R.id.edtSenhaAtualDialog);
+        com.google.android.material.textfield.TextInputEditText edtNovoEmail = dialogView.findViewById(R.id.edtNovoEmailDialog);
+        com.google.android.material.button.MaterialButton btnCancelar = dialogView.findViewById(R.id.btnCancelarEmail);
+        com.google.android.material.button.MaterialButton btnConfirmar = dialogView.findViewById(R.id.btnConfirmarEmail);
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirmar.setOnClickListener(v -> {
+            String senhaAtual = edtSenhaAtual.getText().toString().trim();
+            String novoEmail = edtNovoEmail.getText().toString().trim();
+
+            if (senhaAtual.isEmpty() || novoEmail.isEmpty()) {
+                Toast.makeText(getContext(), "Preencha todos os campos!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            btnConfirmar.setEnabled(false);
+            btnConfirmar.setText("Enviando...");
+
+            ApiService apiService = RetrofitClient.getApiService(requireContext());
+            SolicitarTrocaEmailDTO dto = new SolicitarTrocaEmailDTO(senhaAtual, novoEmail);
+
+            apiService.solicitarTrocaEmail(dto).enqueue(new Callback<okhttp3.ResponseBody>() {
+                @Override
+                public void onResponse(Call<okhttp3.ResponseBody> call, Response<okhttp3.ResponseBody> response) {
+                    dialog.dismiss();
+                    if (response.isSuccessful()) {
+                        Toast.makeText(getContext(), "Código enviado para o seu e-mail atual!", Toast.LENGTH_LONG).show();
+
+                        // Vai para o fragmento de digitar o código
+                        requireActivity().getSupportFragmentManager().beginTransaction()
+                                .replace(R.id.fragment_container, new VerificarCodigoEmailFragment())
+                                .addToBackStack(null)
+                                .commit();
+                    } else {
+                        // TRATAMENTO DETALHADO DE ERROS:
+                        int code = response.code();
+                        if (code == 401 || code == 403) {
+                            Toast.makeText(getContext(), "A senha atual está incorreta.", Toast.LENGTH_LONG).show();
+                        } else if (code == 400 || code == 409) {
+                            Toast.makeText(getContext(), "O novo e-mail já está em uso por outra conta.", Toast.LENGTH_LONG).show();
+                        } else if (code == 500) {
+                            Toast.makeText(getContext(), "Erro 500: Falha interna no servidor.", Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(getContext(), "Erro " + code + " ao solicitar troca.", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<okhttp3.ResponseBody> call, Throwable t) {
+                    dialog.dismiss();
+                    Toast.makeText(getContext(), "Falha de conexão.", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        dialog.show();
     }
 
     private void exibirDialogAlterarSenha() {
