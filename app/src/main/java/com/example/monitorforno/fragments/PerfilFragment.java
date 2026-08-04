@@ -72,6 +72,7 @@ public class PerfilFragment extends Fragment {
         MaterialButton btnAlterarEmail = view.findViewById(R.id.btnAlterarEmail);
         MaterialButton btnAlterarSenha = view.findViewById(R.id.btnAlterarSenha);
         MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
+        MaterialButton btnExcluirConta = view.findViewById(R.id.btnExcluirConta);
 
         // 2. Chamar as APIs para carregar os dados cadastrados
         buscarPerfilNaApi();
@@ -80,6 +81,7 @@ public class PerfilFragment extends Fragment {
         // 3. Ações dos botões e cliques
         btnAlterarSenha.setOnClickListener(v -> exibirDialogAlterarSenha());
         btnAlterarEmail.setOnClickListener(v -> exibirDialogAlterarEmail());
+        btnExcluirConta.setOnClickListener(v -> exibirDialogExcluirConta());
 
         // CORREÇÃO: Vincula o clique no container da foto para abrir a galeria
         if (layoutFotoPerfil != null) {
@@ -249,6 +251,75 @@ public class PerfilFragment extends Fragment {
         });
 
         // Mostra o dialog
+        dialog.show();
+    }
+
+    private void exibirDialogExcluirConta() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_excluir_conta, null);
+        builder.setView(dialogView);
+
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            // Deixa o fundo transparente para respeitar os cantos arredondados do CardView
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        com.google.android.material.button.MaterialButton btnNao = dialogView.findViewById(R.id.btnNaoExcluir);
+        com.google.android.material.button.MaterialButton btnSim = dialogView.findViewById(R.id.btnSimExcluir);
+
+        // Se clicar em não, apenas fecha o dialog
+        btnNao.setOnClickListener(v -> dialog.dismiss());
+
+        // Se clicar em sim, chama a API
+        btnSim.setOnClickListener(v -> {
+            btnSim.setEnabled(false);
+            btnSim.setText("Aguarde...");
+
+            ApiService apiService = RetrofitClient.getApiService(requireContext());
+
+            apiService.deletarUsuario().enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    dialog.dismiss();
+                    if (response.isSuccessful()) {
+                        Toast.makeText(getContext(), "Conta excluída com sucesso.", Toast.LENGTH_LONG).show();
+
+                        SessionManager sessionManager = new SessionManager(requireContext());
+                        sessionManager.limparSessao();
+
+                        Intent intent = new Intent(getActivity(), LoginActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+
+                        if (getActivity() != null) {
+                            getActivity().finish();
+                        }
+                    } else {
+                        // Mostrando o código exato do erro
+                        int code = response.code();
+                        if (code == 500) {
+                            Toast.makeText(getContext(), "Erro 500: O usuário possui dados vinculados no banco de dados.", Toast.LENGTH_LONG).show();
+                        } else if (code == 401 || code == 403) {
+                            Toast.makeText(getContext(), "Erro " + code + ": Falha de autenticação. Verifique o Token.", Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(getContext(), "Erro " + code + " ao excluir conta.", Toast.LENGTH_LONG).show();
+                        }
+
+                        // Reativa o botão em caso de erro
+                        btnSim.setEnabled(true);
+                        btnSim.setText("Sim");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    dialog.dismiss();
+                    Toast.makeText(getContext(), "Erro de conexão.", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
         dialog.show();
     }
 

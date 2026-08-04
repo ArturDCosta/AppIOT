@@ -130,4 +130,10 @@ public interface ApiService {
 
     @POST("v1/auth/verificar-codigo-redefinir-email")
     Call<okhttp3.ResponseBody> confirmarTrocaEmail(@Body ConfirmarTrocaEmailDTO dto);
+
+    //============================================
+    // EXCLUIR CONTA
+    //============================================
+    @DELETE("usuario")
+    Call<Void> deletarUsuario();
 }
