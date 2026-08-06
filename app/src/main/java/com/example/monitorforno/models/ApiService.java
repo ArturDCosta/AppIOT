@@ -134,6 +134,6 @@ public interface ApiService {
     //============================================
     // EXCLUIR CONTA
     //============================================
-    @DELETE("usuario")
+    @DELETE("v1/usuario")
     Call<Void> deletarUsuario();
 }

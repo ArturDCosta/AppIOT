@@ -272,12 +272,14 @@ public class PerfilFragment extends Fragment {
         btnNao.setOnClickListener(v -> dialog.dismiss());
 
         // Se clicar em sim, chama a API
+        // Se clicar em sim, chama a API
         btnSim.setOnClickListener(v -> {
             btnSim.setEnabled(false);
             btnSim.setText("Aguarde...");
 
             ApiService apiService = RetrofitClient.getApiService(requireContext());
 
+            // A chamada deve ser vazia, pois o RetrofitClient (Interceptor) injetará o token
             apiService.deletarUsuario().enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
@@ -285,30 +287,25 @@ public class PerfilFragment extends Fragment {
                     if (response.isSuccessful()) {
                         Toast.makeText(getContext(), "Conta excluída com sucesso.", Toast.LENGTH_LONG).show();
 
-                        SessionManager sessionManager = new SessionManager(requireContext());
-                        sessionManager.limparSessao();
-
-                        Intent intent = new Intent(getActivity(), LoginActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-
-                        if (getActivity() != null) {
-                            getActivity().finish();
-                        }
+                        // Usa o método fazerLogout() que já existe na sua classe
+                        fazerLogout();
                     } else {
-                        // Mostrando o código exato do erro
-                        int code = response.code();
-                        if (code == 500) {
-                            Toast.makeText(getContext(), "Erro 500: O usuário possui dados vinculados no banco de dados.", Toast.LENGTH_LONG).show();
-                        } else if (code == 401 || code == 403) {
-                            Toast.makeText(getContext(), "Erro " + code + ": Falha de autenticação. Verifique o Token.", Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(getContext(), "Erro " + code + " ao excluir conta.", Toast.LENGTH_LONG).show();
-                        }
-
-                        // Reativa o botão em caso de erro
                         btnSim.setEnabled(true);
                         btnSim.setText("Sim");
+
+                        // --- CAPTURA DETALHADA DO ERRO ---
+                        String detalheErro = "Erro " + response.code();
+                        try {
+                            if (response.errorBody() != null) {
+                                detalheErro = response.errorBody().string();
+                                android.util.Log.e("ERRO_API", "Motivo: " + detalheErro);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                        // Vai mostrar o motivo real na tela
+                        Toast.makeText(getContext(), detalheErro, Toast.LENGTH_LONG).show();
                     }
                 }
 
