@@ -84,8 +84,17 @@ public class PerfilFragment extends Fragment {
         btnExcluirConta.setOnClickListener(v -> exibirDialogExcluirConta());
 
         // CORREÇÃO: Vincula o clique no container da foto para abrir a galeria
+        // Novo clique no container da foto de perfil
         if (layoutFotoPerfil != null) {
-            layoutFotoPerfil.setOnClickListener(v -> galeriaLauncher.launch("image/*"));
+            layoutFotoPerfil.setOnClickListener(v -> {
+                // Se o usuário já tem foto, mostramos o menu com a opção de excluir
+                if (usuarioJaPossuiFoto) {
+                    exibirDialogOpcoesFoto();
+                } else {
+                    // Se não tem foto, vai direto para a galeria (como antes)
+                    galeriaLauncher.launch("image/*");
+                }
+            });
         }
 
         btnLogout.setOnClickListener(v -> {
@@ -136,6 +145,90 @@ public class PerfilFragment extends Fragment {
             public void onFailure(Call<PerfilDTO> call, Throwable t) {
                 Log.e("API_PERFIL", "Falha na comunicação: " + t.getMessage());
                 Toast.makeText(getContext(), "Erro de conexão com servidor.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void exibirDialogOpcoesFoto() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_opcoes_foto, null);
+        builder.setView(dialogView);
+
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        com.google.android.material.button.MaterialButton btnAlterar = dialogView.findViewById(R.id.btnAlterarFoto);
+        com.google.android.material.button.MaterialButton btnRemover = dialogView.findViewById(R.id.btnRemoverFoto);
+        com.google.android.material.button.MaterialButton btnCancelar = dialogView.findViewById(R.id.btnCancelarOpcoes);
+
+        btnAlterar.setOnClickListener(v -> {
+            dialog.dismiss();
+            galeriaLauncher.launch("image/*");
+        });
+
+        btnRemover.setOnClickListener(v -> {
+            dialog.dismiss();
+            confirmarExclusaoFoto();
+        });
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void confirmarExclusaoFoto() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_confirmar_exclusao_foto, null);
+        builder.setView(dialogView);
+
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        com.google.android.material.button.MaterialButton btnCancelar = dialogView.findViewById(R.id.btnCancelarExclusao);
+        com.google.android.material.button.MaterialButton btnConfirmar = dialogView.findViewById(R.id.btnConfirmarExclusao);
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirmar.setOnClickListener(v -> {
+            btnConfirmar.setEnabled(false);
+            btnConfirmar.setText("Removendo...");
+            deletarFotoDaApi(dialog); // Passamos o dialog para fechá-lo depois
+        });
+
+        dialog.show();
+    }
+
+    private void deletarFotoDaApi(android.app.AlertDialog dialog) {
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+
+        apiService.deletarFotoPerfil().enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                dialog.dismiss(); // Fecha o popup
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Foto removida com sucesso!", Toast.LENGTH_SHORT).show();
+
+                    usuarioJaPossuiFoto = false;
+                    imgFotoPerfil.setImageResource(R.drawable.ic_perfil);
+
+                    if (cardIconeEdicao != null) {
+                        cardIconeEdicao.setVisibility(View.VISIBLE);
+                    }
+                } else {
+                    Log.e("API_FOTO", "Erro ao remover foto: " + response.code());
+                    Toast.makeText(getContext(), "Erro ao remover a foto do servidor.", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                dialog.dismiss(); // Fecha o popup mesmo se der erro
+                Log.e("API_FOTO", "Falha ao remover foto: " + t.getMessage());
+                Toast.makeText(getContext(), "Falha de conexão com o servidor.", Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -122,6 +122,9 @@ public interface ApiService {
     @PUT("v1/usuario/foto-perfil/update-img")
     Call<FotoPerfilResponseDTO> updateFotoPerfil(@Body FotoPerfilRequestDTO dto);
 
+    @DELETE("v1/usuario/foto-perfil/delete-img")
+    Call<Void> deletarFotoPerfil();
+
     // ==========================================
     // TROCA DE E-MAIL
     // ==========================================
