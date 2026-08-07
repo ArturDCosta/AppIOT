@@ -139,4 +139,10 @@ public interface ApiService {
     //============================================
     @DELETE("v1/usuario")
     Call<Void> deletarUsuario();
+
+    //====================
+    //MUTAR BUZZER
+    //====================
+    @POST("v1/fornos/mutar-buzzer/{serialNumber}")
+    Call<Void> mutarBuzzer(@Path("serialNumber") String serialNumber);
 }

@@ -116,6 +116,20 @@
                     android:textColor="@color/white"
                     android:textSize="18sp"/>
 
+                <!-- NOVO BOTÃO AQUI: Visibilidade GONE por padrão -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMutarBuzzer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="SILENCIAR ALARME"
+                    app:icon="@android:drawable/ic_lock_silent_mode_off"
+                    app:iconTint="@color/white"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/card_dark"
+                    android:visibility="gone" />
+                <!-- Usei a backgroundTint card_dark pois contrasta bem se o fundo do card ficar vermelho/laranja -->
+
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>

@@ -58,7 +58,7 @@ public class DashboardFragment extends Fragment {
     private ImageView btnEditarNomeForno;
 
     private Spinner spinnerFornos;
-    private MaterialButton btnEscaneadorQr;
+    private MaterialButton btnEscaneadorQr, btnMutarBuzzer;
     private List<FornoResponseDTO> listaDeFornosDoUsuario = new ArrayList<>();
 
     // =====================================================================
@@ -145,6 +145,8 @@ public class DashboardFragment extends Fragment {
 
         btnEditarNomeForno = view.findViewById(R.id.btnEditarNomeForno);
         btnEditarNomeForno.setOnClickListener(v -> abrirDialogEditarNome());
+        btnMutarBuzzer = view.findViewById(R.id.btnMutarBuzzer);
+        btnMutarBuzzer.setOnClickListener(v -> mutarBuzzerDoForno());
 
         return view;
     }
@@ -289,6 +291,8 @@ public class DashboardFragment extends Fragment {
 
             txtEstadoForno.setText("FORNO DESLIGADO");
             cardEstadoForno.setCardBackgroundColor(getResources().getColor(R.color.forno_desligado));
+
+            btnMutarBuzzer.setVisibility(View.GONE);
             return;
         }
 
@@ -316,12 +320,16 @@ public class DashboardFragment extends Fragment {
 
         if ("SEGURO".equals(estadoSistema) || "OPERACAO_NORMAL".equals(estadoSistema)) {
             txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_verde));
+            btnMutarBuzzer.setVisibility(View.GONE);
         } else if ("ALERTA".equals(estadoSistema)) {
             txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_laranja));
+            btnMutarBuzzer.setVisibility(View.VISIBLE);
         } else if ("CRITICO".equals(estadoSistema)) {
             txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_vermelho));
+            btnMutarBuzzer.setVisibility(View.VISIBLE);
         } else {
             txtEstadoSistema.setTextColor(Color.GRAY);
+            btnMutarBuzzer.setVisibility(View.GONE);
         }
 
         String estadoForno = dados.getEstadoForno();
@@ -514,6 +522,38 @@ public class DashboardFragment extends Fragment {
             public void onFailure(Call<FornoResponseDTO> call, Throwable t) {
                 if (getContext() != null) {
                     Toast.makeText(getContext(), "Falha de conexão com o servidor.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void mutarBuzzerDoForno() {
+        if (spinnerFornos == null || spinnerFornos.getSelectedItem() == null) {
+            Toast.makeText(getContext(), "Nenhum forno selecionado.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Pega o forno atualmente selecionado no Spinner
+        FornoResponseDTO fornoSelecionado = (FornoResponseDTO) spinnerFornos.getSelectedItem();
+        String serialNumber = fornoSelecionado.getSerialNumber();
+
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        apiService.mutarBuzzer(serialNumber).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                if (getContext() == null) return;
+
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Comando de silenciar enviado!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Erro ao silenciar: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "Falha na comunicação com o servidor.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
