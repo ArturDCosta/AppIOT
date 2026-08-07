@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.monitorforno.R;
 import com.example.monitorforno.adapters.EventoSessaoAdapter;
 import com.example.monitorforno.models.ApiService;
+import com.example.monitorforno.models.EventoSessao;
 import com.example.monitorforno.models.SessaoDetalhesDTO;
 import com.example.monitorforno.models.TemperaturaDTO;
 import com.example.monitorforno.network.RetrofitClient;
@@ -125,6 +126,36 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         int qtdRegistros = valores.size();
         txtTempMax.setText("Máx: " + Math.round(maxTemp) + "°C");
         txtTempMedia.setText("Média: " + (qtdRegistros > 0 ? Math.round(somaTemp / qtdRegistros) : 0) + "°C");
+
+        if (sessao.getEventos() != null && !sessao.getEventos().isEmpty()) {
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+            recyclerView.setAdapter(new EventoSessaoAdapter(sessao.getEventos()));
+            txtQtdAlertas.setText("Eventos: " + sessao.getEventos().size());
+
+            // --- LÓGICA ATUALIZADA DE CONTAGEM DE EVENTOS CRÍTICOS ---
+            int criticos = 0;
+            for (EventoSessao evento : sessao.getEventos()) {
+                // Usamos o getDescricao() porque ele guarda o "tipo" do JSON
+                if (evento.getDescricao() != null && evento.getDescricao().toUpperCase().contains("CRITICO")) {
+                    criticos++;
+                }
+            }
+
+            txtQtdCriticos.setText("Críticos: " + criticos);
+
+            // Muda a cor do texto para vermelho se houver eventos críticos para chamar a atenção
+            if (criticos > 0) {
+                txtQtdCriticos.setTextColor(Color.parseColor("#FF5252")); // Vermelho
+            } else {
+                txtQtdCriticos.setTextColor(Color.WHITE);
+            }
+
+        } else {
+            // Caso a lista venha nula ou vazia
+            txtQtdAlertas.setText("Eventos: 0");
+            txtQtdCriticos.setText("Críticos: 0");
+            txtQtdCriticos.setTextColor(Color.WHITE);
+        }
 
         // Desenha o gráfico
         atualizarGrafico(valores, horarios);
