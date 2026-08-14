@@ -69,19 +69,14 @@ public class PerfilFragment extends Fragment {
         imgFotoPerfil = view.findViewById(R.id.imgFotoPerfil);
         cardIconeEdicao = view.findViewById(R.id.cardIconeEdicao);
 
-        MaterialButton btnAlterarEmail = view.findViewById(R.id.btnAlterarEmail);
-        MaterialButton btnAlterarSenha = view.findViewById(R.id.btnAlterarSenha);
-        MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
-        MaterialButton btnExcluirConta = view.findViewById(R.id.btnExcluirConta);
+        android.widget.ImageButton btnConfiguracoes = view.findViewById(R.id.btnConfiguracoes);
 
         // 2. Chamar as APIs para carregar os dados cadastrados
         buscarPerfilNaApi();
         buscarFotoPerfilNaApi(); // CORREÇÃO: Adicionado para trazer a foto ao entrar na tela
 
         // 3. Ações dos botões e cliques
-        btnAlterarSenha.setOnClickListener(v -> exibirDialogAlterarSenha());
-        btnAlterarEmail.setOnClickListener(v -> exibirDialogAlterarEmail());
-        btnExcluirConta.setOnClickListener(v -> exibirDialogExcluirConta());
+        btnConfiguracoes.setOnClickListener(v -> exibirMenuConfiguracoes(v));
 
         // CORREÇÃO: Vincula o clique no container da foto para abrir a galeria
         // Novo clique no container da foto de perfil
@@ -96,18 +91,6 @@ public class PerfilFragment extends Fragment {
                 }
             });
         }
-
-        btnLogout.setOnClickListener(v -> {
-            // Chama a classe que gerencia a sessão e pede para limpar
-            SessionManager sessionManager = new SessionManager(requireContext());
-            sessionManager.limparSessao();
-
-            // Redireciona para o Login
-            Intent intent = new Intent(getActivity(), LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            requireActivity().finish();
-        });
 
         return view;
     }
@@ -345,6 +328,33 @@ public class PerfilFragment extends Fragment {
 
         // Mostra o dialog
         dialog.show();
+    }
+
+    private void exibirMenuConfiguracoes(View view) {
+        android.widget.PopupMenu popupMenu = new android.widget.PopupMenu(requireContext(), view);
+        popupMenu.getMenuInflater().inflate(R.menu.menu_perfil, popupMenu.getMenu());
+
+        popupMenu.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+
+            if (id == R.id.menu_alterar_email) {
+                exibirDialogAlterarEmail();
+                return true;
+            } else if (id == R.id.menu_alterar_senha) {
+                exibirDialogAlterarSenha();
+                return true;
+            } else if (id == R.id.menu_sair) {
+                fazerLogout();
+                return true;
+            } else if (id == R.id.menu_excluir_conta) {
+                exibirDialogExcluirConta();
+                return true;
+            }
+
+            return false;
+        });
+
+        popupMenu.show();
     }
 
     private void exibirDialogExcluirConta() {

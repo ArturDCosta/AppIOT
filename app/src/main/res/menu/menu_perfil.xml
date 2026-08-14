@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_alterar_email"
+        android:title="Alterar Email" />
+    <item
+        android:id="@+id/menu_alterar_senha"
+        android:title="Alterar Senha" />
+    <item
+        android:id="@+id/menu_sair"
+        android:title="Sair da Conta" />
+    <item
+        android:id="@+id/menu_excluir_conta"
+        android:title="Excluir Conta" />
+</menu>
