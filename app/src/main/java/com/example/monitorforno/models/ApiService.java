@@ -145,4 +145,10 @@ public interface ApiService {
     //====================
     @POST("v1/fornos/mutar-buzzer/{serialNumber}")
     Call<Void> mutarBuzzer(@Path("serialNumber") String serialNumber);
+
+    // ==========================================
+    // NOTIFICAÇÕES / FCM
+    // ==========================================
+    @POST("v1/usuario/fcm-token")
+    Call<Void> salvarFcmToken(@Body FcmTokenDTO dto);
 }

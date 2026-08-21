@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "499747801298",
+    "project_id": "monitorforno---teste",
+    "storage_bucket": "monitorforno---teste.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:499747801298:android:93cbaebd2daade9d72050b",
+        "android_client_info": {
+          "package_name": "com.example.monitorforno"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtJiiT4tkafXOGmrAFP7qG2F9Bra0_69E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
