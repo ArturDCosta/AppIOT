@@ -21,6 +21,8 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.List;
 
+import com.google.firebase.messaging.FirebaseMessaging;
+
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -150,6 +152,32 @@ public class LoginActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponseDTO dados = response.body();
                     sessionManager.salvarSessao(dados.getToken(), dados.getId());
+
+                    FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                        if (!task.isSuccessful()) {
+                            Log.w("FCM", "Falha ao obter token do Firebase", task.getException());
+                            return;
+                        }
+
+                        // Pega o token gerado pelo celular
+                        String token = task.getResult();
+                        com.example.monitorforno.models.FcmTokenDTO fcmDto = new com.example.monitorforno.models.FcmTokenDTO(token);
+
+                        // Envia para a API Spring
+                        RetrofitClient.getApiService(LoginActivity.this).salvarFcmToken(fcmDto).enqueue(new Callback<Void>() {
+                            @Override
+                            public void onResponse(Call<Void> call, Response<Void> responseFCM) {
+                                if (responseFCM.isSuccessful()) {
+                                    Log.d("FCM", "Token vinculado ao usuário com sucesso!");
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<Void> call, Throwable t) {
+                                Log.e("FCM", "Falha ao enviar token FCM para a API", t);
+                            }
+                        });
+                    });
 
                     Toast.makeText(LoginActivity.this, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show();
                     irParaMain();
