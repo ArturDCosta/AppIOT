@@ -144,5 +144,8 @@ public interface ApiService {
     //MUTAR BUZZER
     //====================
     @POST("v1/fornos/mutar-buzzer/{serialNumber}")
-    Call<Void> mutarBuzzer(@Path("serialNumber") String serialNumber);
+    Call<Void> mutarBuzzer(
+            @Path("serialNumber") String serialNumber,
+            @Body Object emptyBody
+    );
 }

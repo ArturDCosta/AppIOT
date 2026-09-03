@@ -546,7 +546,7 @@ public class DashboardFragment extends Fragment {
         String serialNumber = fornoSelecionado.getSerialNumber();
 
         ApiService apiService = RetrofitClient.getApiService(requireContext());
-        apiService.mutarBuzzer(serialNumber).enqueue(new Callback<Void>() {
+        apiService.mutarBuzzer(serialNumber, new Object()).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 if (getContext() == null) return;
