@@ -7,7 +7,7 @@ public class DashboardDTO {
     private Double temperaturaUltima;
     private String estadoForno;
     private String estadoSistema;
-    private Long tempoLigadoMinutos;
+    private Long tempoLigadoSegundos;
     private Integer quantidadeSessoes;
     private Double temperaturaMaxima;
     private String ultimoEvento;
@@ -26,7 +26,7 @@ public class DashboardDTO {
     public Double getTemperaturaUltima() { return temperaturaUltima; }
     public String getEstadoForno() { return estadoForno; }
     public String getEstadoSistema() { return estadoSistema; }
-    public Long getTempoLigadoMinutos() { return tempoLigadoMinutos; }
+    public Long getTempoLigadoSegundos() { return tempoLigadoSegundos; }
     public Integer getQuantidadeSessoes() { return quantidadeSessoes; }
     public Double getTemperaturaMaxima() { return temperaturaMaxima; }
     public String getUltimoEvento() { return ultimoEvento; }

@@ -240,14 +240,17 @@ public class HistoricoFragment extends Fragment {
 
         long horas = tempoTotalSegundos / 3600;
         long minutos = (tempoTotalSegundos % 3600) / 60;
+        long segundos = tempoTotalSegundos % 60;
 
         txtTotalSessoes.setText("Total de Sessões: " + totalSessoes);
         txtMaiorTemperatura.setText("Maior Temperatura: " + Math.round(maiorTempGlobal) + "°C");
 
         if (horas > 0) {
-            txtTempoTotal.setText("Tempo Total: " + horas + "h " + minutos + "min");
+            txtTempoTotal.setText("Tempo Total: " + horas + "h " + minutos + "m");
+        } else if (minutos > 0) {
+            txtTempoTotal.setText("Tempo Total: " + minutos + "m " + segundos + "s");
         } else {
-            txtTempoTotal.setText("Tempo Total: " + minutos + "min");
+            txtTempoTotal.setText("Tempo Total: " + segundos + "s");
         }
     }
 }

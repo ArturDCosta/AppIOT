@@ -1,6 +1,5 @@
 package com.example.monitorforno.fragments;
 
-import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -279,7 +278,7 @@ public class DashboardFragment extends Fragment {
         txtNomeForno.setText(nomeForno != null ? nomeForno : "--");
 
         // REGRA: Se os dados forem nulos OU se o estado do forno for DESLIGADO, limpamos o painel (exceto alertas)
-        if (dados == null || dados.getEstadoForno() == null || "FORNO_DESLIGADO".equals(dados.getEstadoForno())) {
+        if (dados == null || dados.getEstadoForno() == null) {
             txtTemperaturaAtual.setText("--");
             txtAtual.setText("--");
             txtUltima.setText("--");
@@ -303,11 +302,20 @@ public class DashboardFragment extends Fragment {
         txtAtual.setText(tempAtualTexto);
         txtUltima.setText(tempUltimaTexto);
 
-        if (dados.getTempoLigadoMinutos() != null) {
-            long totalMinutos = dados.getTempoLigadoMinutos();
-            long horas = totalMinutos / 60;
-            long minutos = totalMinutos % 60;
-            txtTempoLigado.setText(horas > 0 ? horas + "h " + minutos + "m" : minutos + "m");
+        if (dados.getTempoLigadoSegundos() != null) {
+            long totalSegundos = dados.getTempoLigadoSegundos();
+
+            long horas = totalSegundos / 3600;
+            long minutos = (totalSegundos % 3600) / 60;
+            long segundos = totalSegundos % 60;
+
+            if (horas > 0) {
+                txtTempoLigado.setText(horas + "h " + minutos + "m");
+            } else if (minutos > 0) {
+                txtTempoLigado.setText(minutos + "m " + segundos + "s");
+            } else {
+                txtTempoLigado.setText(segundos + "s");
+            }
         } else {
             txtTempoLigado.setText("--");
         }
