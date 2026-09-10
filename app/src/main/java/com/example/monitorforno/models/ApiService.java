@@ -31,11 +31,12 @@ public interface ApiService {
     @GET("v1/sessoes/{id}")
     Call<SessaoDetalhesDTO> getSessaoPorId(@Path("id") String id);
 
+
     @POST("v1/sessoes/iniciar")
-    Call<Void> iniciarSessao();
+    Call<Void> iniciarSessao(@Body Object emptyBody);
 
     @PUT("v1/sessoes/{id}/encerrar")
-    Call<SessaoDetalhesDTO> encerrarSessao(@Path("id") String id);
+    Call<SessaoDetalhesDTO> encerrarSessao(@Path("id") String id, @Body Object emptyBody);
 
 
     // ==========================================
@@ -55,10 +56,6 @@ public interface ApiService {
     // ==========================================
     @GET("v1/temperaturas/minhas")
     Call<List<TemperaturaDTO>> minhasTemperaturas();
-
-    //historico
-    @GET("v1/sessoes")
-    Call<List<Sessao>> getHistoricoSessoes();
 
     @GET("v1/usuario/meu-perfil")
     Call<PerfilDTO> getMeuPerfil();
