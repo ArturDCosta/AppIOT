@@ -278,7 +278,7 @@ public class DashboardFragment extends Fragment {
         txtNomeForno.setText(nomeForno != null ? nomeForno : "--");
 
         // REGRA: Se os dados forem nulos OU se o estado do forno for DESLIGADO, limpamos o painel (exceto alertas)
-        if (dados == null || dados.getEstadoForno() == null) {
+        if (dados == null || dados.getEstadoForno() == null || "FORNO_DESLIGADO".equals(dados.getEstadoForno())) {
             txtTemperaturaAtual.setText("--");
             txtAtual.setText("--");
             txtUltima.setText("--");
