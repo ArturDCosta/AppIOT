@@ -98,8 +98,19 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         txtInicio.setText("Início: " + formatarHoraSemSegundos(sessao.getInicioSessao()));
         txtFim.setText("Fim: " + formatarHoraSemSegundos(sessao.getFimSessao()));
 
-        long duracaoMin = (sessao.getDuracaoSegundos() != null) ? (sessao.getDuracaoSegundos() / 60) : 0;
-        txtDuracao.setText("Duração: " + duracaoMin + " min");
+        if (sessao.getDuracaoSegundos() != null) {
+            long totalSeg = sessao.getDuracaoSegundos();
+            long min = totalSeg / 60;
+            long seg = totalSeg % 60;
+
+            if (min > 0) {
+                txtDuracao.setText("Duração: " + min + "m " + seg + "s");
+            } else {
+                txtDuracao.setText("Duração: " + seg + "s");
+            }
+        } else {
+            txtDuracao.setText("Duração: --");
+        }
 
         String estado = sessao.getEstadoFornoFinal() != null ? sessao.getEstadoFornoFinal() : "DESLIGADO";
         txtEstadoFinal.setText(estado.replace("FORNO_", ""));
