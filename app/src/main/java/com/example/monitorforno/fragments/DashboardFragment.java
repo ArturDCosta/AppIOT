@@ -77,7 +77,7 @@ public class DashboardFragment extends Fragment {
                 carregarAlertasReaisNoDashboard(fornoSelecionado.getId());
             }
             // Agenda para rodar novamente daqui a 5000ms
-            autoUpdateHandler.postDelayed(this, 3000);
+            autoUpdateHandler.postDelayed(this, 500);
         }
     };
 
