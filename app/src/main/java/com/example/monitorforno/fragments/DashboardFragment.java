@@ -60,6 +60,8 @@ public class DashboardFragment extends Fragment {
     private Spinner spinnerFornos;
     private MaterialButton btnEscaneadorQr, btnMutarBuzzer;
     private List<FornoResponseDTO> listaDeFornosDoUsuario = new ArrayList<>();
+    private EventoAdapter eventoAdapter;
+    private final List<EventoDTO> listaAlertasDashboard = new ArrayList<>();
 
     // =====================================================================
     // 1. HANDLER E RUNNABLE (Para atualização automática a cada 5 segundos)
@@ -136,6 +138,10 @@ public class DashboardFragment extends Fragment {
 
         recyclerAlertas.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerAlertas.addItemDecoration(new CustomDivisor(getContext()));
+
+        // Inicializa o adapter conectado à lista global
+        eventoAdapter = new EventoAdapter(listaAlertasDashboard);
+        recyclerAlertas.setAdapter(eventoAdapter);
 
         configurarCliquesCards();
 
@@ -256,23 +262,51 @@ public class DashboardFragment extends Fragment {
             public void onResponse(@NonNull Call<List<EventoDTO>> call, @NonNull Response<List<EventoDTO>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<EventoDTO> todosEventos = response.body();
-                    List<EventoDTO> ultimosEventos;
-                    if (todosEventos.size() > 3) {
-                        ultimosEventos = todosEventos.subList(0, 3);
-                    } else {
-                        ultimosEventos = todosEventos;
+
+                    // Ordena do mais recente para o mais antigo
+                    java.util.Collections.sort(todosEventos, (e1, e2) -> {
+                        if (e1.getCriadoEm() == null) return 1;
+                        if (e2.getCriadoEm() == null) return -1;
+                        return e2.getCriadoEm().compareTo(e1.getCriadoEm());
+                    });
+
+                    List<EventoDTO> novosAlertas = todosEventos.subList(0, Math.min(todosEventos.size(), 3));
+
+                    // SÓ atualiza a tela se os dados realmente mudarem na API
+                    if (saoListasDiferentes(listaAlertasDashboard, novosAlertas)) {
+                        listaAlertasDashboard.clear();
+                        listaAlertasDashboard.addAll(novosAlertas);
+                        eventoAdapter.notifyDataSetChanged();
                     }
-                    recyclerAlertas.setAdapter(new EventoAdapter(ultimosEventos));
-                } else {
-                    recyclerAlertas.setAdapter(new EventoAdapter(new ArrayList<>()));
+                } else if (!listaAlertasDashboard.isEmpty()) {
+                    listaAlertasDashboard.clear();
+                    eventoAdapter.notifyDataSetChanged();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<List<EventoDTO>> call, @NonNull Throwable t) {
-                recyclerAlertas.setAdapter(new EventoAdapter(new ArrayList<>()));
+                // Silencioso para não interromper o polling rápido
             }
         });
+    }
+
+    // Metodo que compara se os ultimos alertas são iguais
+    private boolean saoListasDiferentes(List<EventoDTO> atual, List<EventoDTO> nova) {
+        if (atual.size() != nova.size()) return true;
+
+        for (int i = 0; i < atual.size(); i++) {
+            EventoDTO eAtual = atual.get(i);
+            EventoDTO eNovo = nova.get(i);
+
+            String idAtual = (eAtual.getCriadoEm() != null ? eAtual.getCriadoEm() : "") + eAtual.getTipo();
+            String idNovo = (eNovo.getCriadoEm() != null ? eNovo.getCriadoEm() : "") + eNovo.getTipo();
+
+            if (!idAtual.equals(idNovo)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void vincularDadosNaTela(DashboardDTO dados, String nomeForno) {
