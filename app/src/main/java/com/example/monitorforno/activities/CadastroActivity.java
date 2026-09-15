@@ -23,7 +23,7 @@ import retrofit2.Response;
 
 public class CadastroActivity extends AppCompatActivity {
 
-    private TextInputEditText edtNome, edtEmail, edtNascimento, edtSenha;
+    private TextInputEditText edtNome, edtEmail, edtNascimento, edtSenha, edtCpf;
     private MaterialButton btnCadastrar;
     private TextView txtVoltarLogin;
 
@@ -40,6 +40,7 @@ public class CadastroActivity extends AppCompatActivity {
         edtEmail = findViewById(R.id.edtEmailCadastro);
         edtNascimento = findViewById(R.id.edtNascimentoCadastro);
         edtSenha = findViewById(R.id.edtSenhaCadastro);
+        edtCpf = findViewById(R.id.edtCpfCadastro);
         btnCadastrar = findViewById(R.id.btnCadastrar);
         txtVoltarLogin = findViewById(R.id.txtVoltarLogin);
 
@@ -74,6 +75,7 @@ public class CadastroActivity extends AppCompatActivity {
     private void executarCadastro() {
         String nome = edtNome.getText() != null ? edtNome.getText().toString().trim() : "";
         String email = edtEmail.getText() != null ? edtEmail.getText().toString().trim() : "";
+        String cpf = edtCpf.getText() != null ? edtCpf.getText().toString().trim().replaceAll("[^0-9]", "") : "";
         String senha = edtSenha.getText() != null ? edtSenha.getText().toString().trim() : "";
         String regexSenha = "^(?=.*[A-Z])(?=.*\\d).{8,}$";
 
@@ -98,12 +100,17 @@ public class CadastroActivity extends AppCompatActivity {
             edtSenha.requestFocus();
             return;
         }
+        if (cpf.isEmpty() || cpf.length() != 11){
+            edtCpf.setError("Informe um CPF válido");
+            edtCpf.requestFocus();
+            return;
+        }
 
         // Bloqueia o botão durante o processamento
         btnCadastrar.setEnabled(false);
         btnCadastrar.setText("Cadastrando...");
 
-        UserRequestDTO dto = new UserRequestDTO(nome, email, dataFormatadaParaApi, senha);
+        UserRequestDTO dto = new UserRequestDTO(nome, email, cpf, dataFormatadaParaApi, senha);
 
         // Dispara a chamada na API usando a mesma estrutura da LoginActivity
         RetrofitClient.getApiService(this)
@@ -120,7 +127,7 @@ public class CadastroActivity extends AppCompatActivity {
                             finish();
                         } else if (response.code() == 409) {
                             // Código HTTP comum para conflito (ex: Email já cadastrado)
-                            Toast.makeText(CadastroActivity.this, "Este e-mail já está em uso.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(CadastroActivity.this, "E-mail ou CPF já cadastrado.", Toast.LENGTH_SHORT).show();
                         } else {
                             Log.e("CadastroAPI", "Erro inesperado: " + response.code());
                             Toast.makeText(CadastroActivity.this, "Erro ao realizar cadastro. Verifique os dados.", Toast.LENGTH_SHORT).show();
