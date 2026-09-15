@@ -43,13 +43,12 @@ public class LoginActivity extends AppCompatActivity {
 
         sessionManager = new SessionManager(this);
 
-        edtEmail       = findViewById(R.id.edtEmail);
-        edtSenha       = findViewById(R.id.edtSenha);
-        btnEntrar      = findViewById(R.id.btnEntrar);
+        edtEmail        = findViewById(R.id.edtEmail);
+        edtSenha        = findViewById(R.id.edtSenha);
+        btnEntrar       = findViewById(R.id.btnEntrar);
         txtEsqueciSenha = findViewById(R.id.txtEsqueciSenha);
-        txtCadastro    = findViewById(R.id.txtCadastro);
+        txtCadastro     = findViewById(R.id.txtCadastro);
 
-        // Verifica se tem sessão salva. Se tiver, valida a conexão antes de entrar!
         if (sessionManager.estaLogado()) {
             validarSessaoEConexao();
         }
@@ -62,28 +61,20 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    // ========================================================
-    // Valida serivodor e internet antes de entrar
-    // ========================================================
     private void validarSessaoEConexao() {
         btnEntrar.setEnabled(false);
         btnEntrar.setText("Conectando ao servidor...");
 
-        // Fazemos uma chamada leve só para testar a comunicação
         RetrofitClient.getApiService(this).minhasSessoes().enqueue(new Callback<List<SessaoDetalhesDTO>>() {
             @Override
             public void onResponse(Call<List<SessaoDetalhesDTO>> call, Response<List<SessaoDetalhesDTO>> response) {
                 if (response.isSuccessful()) {
-                    // Servidor online e token válido! Pode entrar.
                     irParaMain();
                 } else {
-                    // Se deu 401 (token expirado), seu RetrofitClient já vai deslogar automaticamente.
-                    // Para outros erros (ex: 500 servidor com problema), destravamos a tela.
                     btnEntrar.setEnabled(true);
                     btnEntrar.setText("Entrar");
 
                     String mensagemErro;
-
                     switch (response.code()) {
                         case 400:
                             mensagemErro = "Formato inválido. Verifique se digitou o e-mail e a senha corretamente.";
@@ -106,14 +97,12 @@ public class LoginActivity extends AppCompatActivity {
                             mensagemErro = "Erro inesperado ao conectar (Código: " + response.code() + ").";
                             break;
                     }
-
                     Toast.makeText(LoginActivity.this, mensagemErro, Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<SessaoDetalhesDTO>> call, Throwable t) {
-                // Caiu aqui? Não tem internet ou o Spring Boot está desligado.
                 btnEntrar.setEnabled(true);
                 btnEntrar.setText("Entrar");
                 Toast.makeText(LoginActivity.this, "Servidor offline ou sem conexão. Verifique sua rede.", Toast.LENGTH_LONG).show();
@@ -176,7 +165,6 @@ public class LoginActivity extends AppCompatActivity {
                 btnEntrar.setEnabled(true);
                 btnEntrar.setText("Entrar");
                 Log.e("Login", "Falha física de rede: " + t.getMessage());
-
                 Toast.makeText(LoginActivity.this, "Falha na conexão. Verifique sua internet ou tente novamente.", Toast.LENGTH_LONG).show();
             }
         });
@@ -194,7 +182,7 @@ public class LoginActivity extends AppCompatActivity {
     private void abrirDialogEsqueciSenha() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
         builder.setTitle("Recuperar Senha");
-        builder.setMessage("Informe o e-mail cadastrado. Enviaremos um código (token) para redefinição.");
+        builder.setMessage("Informe o e-mail cadastrado. Enviaremos as instruções para recuperação de senha.");
 
         final android.widget.EditText inputEmail = new android.widget.EditText(this);
         inputEmail.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
@@ -206,7 +194,7 @@ public class LoginActivity extends AppCompatActivity {
         layout.addView(inputEmail);
         builder.setView(layout);
 
-        builder.setPositiveButton("Enviar Código", (dialog, which) -> {
+        builder.setPositiveButton("Enviar", (dialog, which) -> {
             String email = inputEmail.getText().toString().trim();
             if (!email.isEmpty()) {
                 chamarApiRecuperacao(email);
@@ -226,15 +214,17 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(LoginActivity.this, "E-mail enviado! Verifique sua caixa de entrada.", Toast.LENGTH_LONG).show();
-                    Intent intent = new Intent(LoginActivity.this, RedefinirSenhaActivity.class);
-                    startActivity(intent);
+                    new MaterialAlertDialogBuilder(LoginActivity.this)
+                            .setTitle("Instruções Enviadas")
+                            .setMessage("Se o e-mail informado estiver cadastrado em nosso sistema, enviaremos um e-mail com as instruções para redefinição de senha.")
+                            .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                            .show();
                 } else {
                     Log.e("RecuperarSenha", "Erro da API: " + response.code());
                     if (response.code() == 500) {
                         Toast.makeText(LoginActivity.this, "Erro no servidor de E-mail (Backend SMTP).", Toast.LENGTH_LONG).show();
                     } else {
-                        Toast.makeText(LoginActivity.this, "Erro. Verifique se o e-mail está cadastrado.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Erro ao solicitar recuperação. Verifique os dados.", Toast.LENGTH_SHORT).show();
                     }
                 }
             }

@@ -3,11 +3,7 @@ package com.example.monitorforno.models;
 import retrofit2.Call;
 import retrofit2.http.*;
 import java.util.List;
-import com.example.monitorforno.models.VincularFornoDTO;
-import com.example.monitorforno.models.FornoResponseDTO;
 import okhttp3.ResponseBody;
-import retrofit2.http.Body;
-import retrofit2.http.POST;
 
 public interface ApiService {
 
@@ -21,6 +17,11 @@ public interface ApiService {
     @POST("v1/usuario")
     Call<Void> cadastrarUsuario(@Body UserRequestDTO dto);
 
+    // ==========================================
+    // RECUPERAÇÃO DE SENHA
+    // ==========================================
+    @POST("v1/auth/esqueci-minha-senha")
+    Call<ResponseBody> solicitarRecuperacaoSenha(@Body EsqueciSenhaDTO dto);
 
     // ==========================================
     // SESSÕES
@@ -37,26 +38,21 @@ public interface ApiService {
     @PUT("v1/sessoes/{id}/encerrar")
     Call<SessaoDetalhesDTO> encerrarSessao(@Path("id") String id);
 
-
     // ==========================================
     // TELEMETRIA
     // ==========================================
-    // Atualizado para bater com o Spring: /forno/{fornoId}/atual
     @GET("v1/telemetrias/forno/{fornoId}/atual")
     Call<TelemetriaResponseDTO> getTelemetriaAtual(@Path("fornoId") String fornoId);
 
-    // Atualizado para bater com o Spring: /forno/{fornoId}/dashboard
     @GET("v1/telemetrias/forno/{fornoId}/dashboard")
     Call<DashboardDTO> getDashboard(@Path("fornoId") String fornoId);
 
-
     // ==========================================
-    // TEMPERATURAS
+    // TEMPERATURAS E HISTÓRICO
     // ==========================================
     @GET("v1/temperaturas/minhas")
     Call<List<TemperaturaDTO>> minhasTemperaturas();
 
-    //historico
     @GET("v1/sessoes")
     Call<List<Sessao>> getHistoricoSessoes();
 
@@ -66,9 +62,9 @@ public interface ApiService {
     @GET("v1/temperaturas/fornos/{fornoId}")
     Call<List<TemperaturaDTO>> getHistoricoTemperaturas(@Path("fornoId") String fornoId);
 
-    //============================
-    //FORNOS
-    //============================
+    // ==========================================
+    // FORNOS
+    // ==========================================
     @PUT("v1/fornos/vincular")
     Call<Void> vincularForno (@Body VincularFornoDTO dto);
 
@@ -78,29 +74,20 @@ public interface ApiService {
     @PUT("v1/fornos/atualizar-forno")
     Call<FornoResponseDTO> atualizarNomeForno (@Body FornoAtualizarDTO dto);
 
-    //alertas
+    // Eventos/Alertas
     @GET("v1/eventos/fornos/{fornoId}")
     Call<List<EventoDTO>> getAlertasDoForno(@Path("fornoId") String fornoId);
 
-    //senha
-    @POST("v1/auth/esqueci-minha-senha")
-    Call<ResponseBody> solicitarRecuperacaoSenha(@Body com.example.monitorforno.models.EsqueciSenhaDTO dto);
-
-    @POST("v1/auth/redefinir-senha")
-    Call<Void> redefinirSenha(@Body com.example.monitorforno.models.NovaSenhaDTO dto);
-
+    // Alteração de senha quando logado
     @PUT("v1/usuario/alterar-minha-senha")
     Call<Void> alterarMinhaSenha(@Body NovaSenhaLogadoDTO dto);
 
     // ==========================================
     // TEMPORIZADORES
     // ==========================================
-
-    // A rota precisa do ID do forno e retorna Void
     @POST("v1/temporizadores/forno/{fornoId}")
     Call<Void> criarTemporizador(@Path("fornoId") String fornoId, @Body TemporizadorRequestDTO dto);
 
-    // A rota correta para o usuário logado é a /meus
     @GET("v1/temporizadores/meus")
     Call<List<TemporizadorResponseDTO>> getTemporizadores();
 
@@ -129,20 +116,20 @@ public interface ApiService {
     // TROCA DE E-MAIL
     // ==========================================
     @POST("v1/auth/enviar-codigo-redefinir-email")
-    Call<okhttp3.ResponseBody> solicitarTrocaEmail(@Body SolicitarTrocaEmailDTO dto);
+    Call<ResponseBody> solicitarTrocaEmail(@Body SolicitarTrocaEmailDTO dto);
 
     @POST("v1/auth/verificar-codigo-redefinir-email")
-    Call<okhttp3.ResponseBody> confirmarTrocaEmail(@Body ConfirmarTrocaEmailDTO dto);
+    Call<ResponseBody> confirmarTrocaEmail(@Body ConfirmarTrocaEmailDTO dto);
 
-    //============================================
+    // ==========================================
     // EXCLUIR CONTA
-    //============================================
+    // ==========================================
     @DELETE("v1/usuario")
     Call<Void> deletarUsuario();
 
-    //====================
-    //MUTAR BUZZER
-    //====================
+    // ==========================================
+    // MUTAR BUZZER
+    // ==========================================
     @POST("v1/fornos/mutar-buzzer/{serialNumber}")
     Call<Void> mutarBuzzer(@Path("serialNumber") String serialNumber);
 }

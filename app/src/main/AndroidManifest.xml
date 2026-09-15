@@ -50,21 +50,6 @@
         <activity
             android:name=".activities.DetalhesSessaoActivity"
             android:exported="false" />
-        <activity
-            android:name=".activities.RedefinirSenhaActivity"
-            android:exported="true">
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:host="monitoramentoforno.com.br"
-                    android:path="/redefinir-senha"
-                    android:scheme="https" />
-            </intent-filter>
-        </activity>
     </application>
 
 </manifest>
