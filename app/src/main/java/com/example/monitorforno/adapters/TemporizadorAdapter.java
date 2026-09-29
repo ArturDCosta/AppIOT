@@ -39,11 +39,15 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         TemporizadorResponseDTO item = temporizadores.get(position);
 
-        // Formata os textos limpando os caracteres de data da ISO se necessário, ex: "2026-06-29T18:00:00" -> "18:00:00"
-        String inicio = formatarHoraIso(item.getCriadoEm());
-        String fim = formatarHoraIso(item.getHorarioFim());
+        if (item.isExecutado()) {
+            holder.txtHorario.setText("Status: Concluído");
+        } else {
+            String inicioStr = item.getHorarioInicio() != null ? item.getHorarioInicio() : item.getCriadoEm();
+            String inicio = formatarHoraIso(inicioStr);
+            String fim = formatarHoraIso(item.getHorarioFim());
 
-        holder.txtHorario.setText("Duração: " + inicio + " até " + fim);
+            holder.txtHorario.setText("Duração: " + inicio + " até " + fim);
+        }
 
         holder.imgExcluir.setOnClickListener(v -> {
             int posicaoAtual = holder.getAdapterPosition();
@@ -54,10 +58,10 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
     }
 
     private String formatarHoraIso(String isoString) {
-        if (isoString == null || !isoString.contains("T")) return "00:00";
+        if (isoString == null || !isoString.contains("T")) return "--:--";
         try {
             String horaParte = isoString.split("T")[1];
-            return horaParte.substring(0, 5); // Retorna HH:mm
+            return horaParte.substring(0, 5);
         } catch (Exception e) {
             return isoString;
         }
