@@ -310,27 +310,36 @@ public class DashboardFragment extends Fragment {
     }
 
     private void vincularDadosNaTela(DashboardDTO dados, String nomeForno) {
+        // SEGURANÇA: Se a aba mudou e o fragment não está anexado, interrompe a execução
+        if (!isAdded() || getContext() == null) {
+            return;
+        }
+
         txtNomeForno.setText(nomeForno != null ? nomeForno : "--");
 
-        // REGRA: Se os dados forem nulos OU se o estado do forno for DESLIGADO, limpamos o painel (exceto alertas)
         if (dados == null || dados.getEstadoForno() == null || "FORNO_DESLIGADO".equals(dados.getEstadoForno())) {
             txtTemperaturaAtual.setText("--");
             txtAtual.setText("--");
             txtUltima.setText("--");
             txtTempoLigado.setText("--");
-            txtTemporizador.setText("--");
+
+            if (dados != null && dados.getProximoTemporizador() != null) {
+                txtTemporizador.setText(formatarTemporizador(dados.getProximoTemporizador()));
+            } else {
+                txtTemporizador.setText("--");
+            }
+
             txtSistema.setText("--");
             txtEstadoSistema.setText("--");
             txtEstadoSistema.setTextColor(Color.GRAY);
 
             txtEstadoForno.setText("FORNO DESLIGADO");
-            cardEstadoForno.setCardBackgroundColor(getResources().getColor(R.color.forno_desligado));
+            cardEstadoForno.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.forno_desligado));
 
             btnMutarBuzzer.setVisibility(View.GONE);
             return;
         }
 
-        // Caso contrário (Fornos ativos: FORNO_AQUECENDO, FORNO_ATIVO, FORNO_ESFRIANDO), renderiza normalmente
         String tempAtualTexto = dados.getTemperaturaAtual() != null ? Math.round(dados.getTemperaturaAtual()) + "°C" : "--";
         String tempUltimaTexto = dados.getTemperaturaUltima() != null ? Math.round(dados.getTemperaturaUltima()) + "°C" : "--";
         txtTemperaturaAtual.setText(tempAtualTexto);
@@ -353,13 +362,13 @@ public class DashboardFragment extends Fragment {
         txtEstadoSistema.setText(estadoSistema);
 
         if ("SEGURO".equals(estadoSistema) || "OPERACAO_NORMAL".equals(estadoSistema)) {
-            txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_verde));
+            txtEstadoSistema.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alerta_verde));
             btnMutarBuzzer.setVisibility(View.GONE);
         } else if ("ALERTA".equals(estadoSistema)) {
-            txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_laranja));
+            txtEstadoSistema.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alerta_laranja));
             btnMutarBuzzer.setVisibility(View.VISIBLE);
         } else if ("CRITICO".equals(estadoSistema)) {
-            txtEstadoSistema.setTextColor(getResources().getColor(R.color.alerta_vermelho));
+            txtEstadoSistema.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alerta_vermelho));
             btnMutarBuzzer.setVisibility(View.VISIBLE);
         } else {
             txtEstadoSistema.setTextColor(Color.GRAY);
@@ -371,13 +380,13 @@ public class DashboardFragment extends Fragment {
 
         switch (estadoForno) {
             case "FORNO_AQUECENDO":
-                cardEstadoForno.setCardBackgroundColor(getResources().getColor(R.color.forno_aquecendo));
+                cardEstadoForno.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.forno_aquecendo));
                 break;
             case "FORNO_ATIVO":
-                cardEstadoForno.setCardBackgroundColor(getResources().getColor(R.color.forno_ativo));
+                cardEstadoForno.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.forno_ativo));
                 break;
             case "FORNO_ESFRIANDO":
-                cardEstadoForno.setCardBackgroundColor(getResources().getColor(R.color.forno_esfriando));
+                cardEstadoForno.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.forno_esfriando));
                 break;
         }
     }
