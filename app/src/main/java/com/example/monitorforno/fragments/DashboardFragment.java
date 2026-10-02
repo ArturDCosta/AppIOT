@@ -175,10 +175,16 @@ public class DashboardFragment extends Fragment {
     }
 
     private void carregarListaDeFornos() {
+        // 1. SEGURANÇA: Se o fragment não estiver anexado, interrompe antes de chamar a API
+        if (!isAdded() || getContext() == null) return;
+
         ApiService apiService = RetrofitClient.getApiService(requireContext());
         apiService.buscarMeusFornos().enqueue(new Callback<List<FornoResponseDTO>>() {
             @Override
-            public void onResponse(Call<List<FornoResponseDTO>> call, Response<List<FornoResponseDTO>> response) {
+            public void onResponse(@NonNull Call<List<FornoResponseDTO>> call, @NonNull Response<List<FornoResponseDTO>> response) {
+                // 2. SEGURANÇA: Verifica se o usuário trocou de aba enquanto a API respondia
+                if (!isAdded() || getContext() == null) return;
+
                 if (response.isSuccessful() && response.body() != null) {
                     listaDeFornosDoUsuario = response.body();
 
@@ -186,13 +192,16 @@ public class DashboardFragment extends Fragment {
                         configurarSpinnerFornos();
                     } else {
                         vincularDadosNaTela(null, "Nenhum Forno");
-                        Toast.makeText(requireContext(), "Escaneie o QR Code do forno para começar!", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getContext(), "Escaneie o QR Code do forno para começar!", Toast.LENGTH_LONG).show();
                     }
                 }
             }
 
             @Override
-            public void onFailure(Call<List<FornoResponseDTO>> call, Throwable t) {
+            public void onFailure(@NonNull Call<List<FornoResponseDTO>> call, @NonNull Throwable t) {
+                // 3. SEGURANÇA: Cancela a atualização se o fragment já foi destruído/desatrelado
+                if (!isAdded() || getContext() == null) return;
+
                 Log.e("DEBUG_API", "Erro ao buscar lista: " + t.getMessage());
                 vincularDadosNaTela(null, "Erro de Conexão");
             }
@@ -200,15 +209,18 @@ public class DashboardFragment extends Fragment {
     }
 
     private void configurarSpinnerFornos() {
+        // 1. SEGURANÇA: Confirma que a view e o contexto existem
+        if (!isAdded() || getContext() == null || spinnerFornos == null) return;
+
         ArrayAdapter<FornoResponseDTO> adapter = new ArrayAdapter<>(
                 requireContext(), android.R.layout.simple_spinner_item, listaDeFornosDoUsuario);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerFornos.setAdapter(adapter);
 
-        String idSalvo = sessionManager.getFornoSelecionadoId();
+        String idSalvo = sessionManager != null ? sessionManager.getFornoSelecionadoId() : null;
         int posicaoParaSelecionar = 0;
 
-        if (idSalvo != null) {
+        if (idSalvo != null && listaDeFornosDoUsuario != null) {
             for (int i = 0; i < listaDeFornosDoUsuario.size(); i++) {
                 if (idSalvo.equals(listaDeFornosDoUsuario.get(i).getId())) {
                     posicaoParaSelecionar = i;
@@ -221,11 +233,15 @@ public class DashboardFragment extends Fragment {
         spinnerFornos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                FornoResponseDTO fornoSelecionado = listaDeFornosDoUsuario.get(position);
-                sessionManager.salvarFornoSelecionado(fornoSelecionado.getId());
+                // 2. SEGURANÇA: Impede execução de callbacks do Spinner se mudar de aba
+                if (!isAdded() || getContext() == null || listaDeFornosDoUsuario == null) return;
 
-                // Dispara uma carga manual assim que o forno é trocado,
-                // sem precisar esperar o próximo "tick" de 5 segundos.
+                FornoResponseDTO fornoSelecionado = listaDeFornosDoUsuario.get(position);
+                if (sessionManager != null) {
+                    sessionManager.salvarFornoSelecionado(fornoSelecionado.getId());
+                }
+
+                // Dispara a carga dos dados com segurança
                 carregarDadosDoDashboard(fornoSelecionado.getId(), fornoSelecionado.getNome());
                 carregarAlertasReaisNoDashboard(fornoSelecionado.getId());
             }
