@@ -39,8 +39,7 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         TemporizadorResponseDTO item = temporizadores.get(position);
 
-        // Formata os textos limpando os caracteres de data da ISO se necessário, ex: "2026-06-29T18:00:00" -> "18:00:00"
-        String inicio = formatarHoraIso(item.getCriadoEm());
+        String inicio = formatarHoraIso(item.getHorarioInicio());
         String fim = formatarHoraIso(item.getHorarioFim());
 
         holder.txtHorario.setText("Duração: " + inicio + " até " + fim);
@@ -57,7 +56,7 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
         if (isoString == null || !isoString.contains("T")) return "00:00";
         try {
             String horaParte = isoString.split("T")[1];
-            return horaParte.substring(0, 5); // Retorna HH:mm
+            return horaParte.substring(0, 5);
         } catch (Exception e) {
             return isoString;
         }

@@ -112,19 +112,41 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
                 return;
             }
 
-            String isoHorarioFim = String.format(Locale.getDefault(), "%04d-%02d-%02dT%s", ano, mes, dia, horaFimSelecionada);
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
-                java.util.Date dataSelecionada = sdf.parse(isoHorarioFim);
+            SimpleDateFormat sdfIso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
 
-                if (dataSelecionada != null && dataSelecionada.getTime() <= System.currentTimeMillis()) {
-                    Toast.makeText(getContext(), "O horário do temporizador deve ser no futuro!", Toast.LENGTH_LONG).show();
-                    return; // Interrompe aqui e não envia para a API!
+            // 1. GERAR ISO DE INÍCIO
+            String isoHorarioInicio;
+            if (horaInicioSelecionada != null) {
+                // Se o usuário escolheu uma hora de início, usa a data selecionada + hora do início
+                isoHorarioInicio = String.format(Locale.getDefault(), "%04d-%02d-%02dT%s", ano, mes, dia, horaInicioSelecionada);
+            } else {
+                // Se não escolheu início, assume a data e hora exata de agora
+                isoHorarioInicio = sdfIso.format(new java.util.Date());
+            }
+
+            // 2. GERAR ISO DE FIM
+            String isoHorarioFim = String.format(Locale.getDefault(), "%04d-%02d-%02dT%s", ano, mes, dia, horaFimSelecionada);
+
+            // Validações de data/hora
+            try {
+                java.util.Date dataFim = sdfIso.parse(isoHorarioFim);
+                java.util.Date dataInicio = sdfIso.parse(isoHorarioInicio);
+
+                if (dataFim != null && dataFim.getTime() <= System.currentTimeMillis()) {
+                    Toast.makeText(getContext(), "O horário de término deve ser no futuro!", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                if (dataInicio != null && dataFim != null && dataFim.before(dataInicio)) {
+                    Toast.makeText(getContext(), "O horário de término deve ser posterior ao de início!", Toast.LENGTH_LONG).show();
+                    return;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            TemporizadorRequestDTO request = new TemporizadorRequestDTO(isoHorarioFim);
+
+            // 3. AGORA PASSAMOS OS 2 PARÂMETROS REQUERIDOS PELO DTO
+            TemporizadorRequestDTO request = new TemporizadorRequestDTO(isoHorarioInicio, isoHorarioFim);
 
             RetrofitClient.getApiService(getContext()).criarTemporizador(fornoId, request).enqueue(new Callback<Void>() {
                 @Override
@@ -141,6 +163,7 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
                         Toast.makeText(getContext(), "Erro ao salvar: " + response.code(), Toast.LENGTH_SHORT).show();
                     }
                 }
+
                 @Override
                 public void onFailure(Call<Void> call, Throwable t) {
                     Toast.makeText(getContext(), "Falha na rede", Toast.LENGTH_SHORT).show();

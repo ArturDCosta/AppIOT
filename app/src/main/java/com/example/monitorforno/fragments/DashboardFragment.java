@@ -340,7 +340,7 @@ public class DashboardFragment extends Fragment {
             txtTempoLigado.setText("--");
 
             if (dados != null && dados.getProximoTemporizador() != null) {
-                txtTemporizador.setText(formatarTemporizador(dados.getProximoTemporizador()));
+                txtTemporizador.setText(dados.getProximoTemporizador() != null ? formatarTemporizador(dados.getProximoTemporizador()) : "--");
             } else {
                 txtTemporizador.setText("--");
             }
@@ -619,29 +619,28 @@ public class DashboardFragment extends Fragment {
     }
 
     private String formatarTemporizador(String dataIso) {
-        if (dataIso == null || !dataIso.contains("T")) {
-            return dataIso;
+        if (dataIso == null || dataIso.trim().isEmpty()) {
+            return "--";
         }
 
         try {
-            java.util.Calendar calendar = java.util.Calendar.getInstance();
-            java.text.SimpleDateFormat formatoHora = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
-            String horaInicio = formatoHora.format(calendar.getTime());
-
+            // Remove fração de segundos se houver (ex: "2026-10-05T18:00:00.000" -> "2026-10-05T18:00:00")
             String dataLimpa = dataIso.split("\\.")[0];
+
             java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault());
             java.util.Date dataFimObj = formatoEntrada.parse(dataLimpa);
 
-            java.text.SimpleDateFormat formatoHoraFim = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
-            java.text.SimpleDateFormat formatoDia = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
+            if (dataFimObj == null) {
+                return dataIso;
+            }
 
-            String horaFim = formatoHoraFim.format(dataFimObj);
-            String diaFim = formatoDia.format(dataFimObj);
-
-            return horaInicio + " às " + horaFim + " - " + diaFim;
+            // Formata para exibir o horário e a data de término de forma clara
+            java.text.SimpleDateFormat formatoExibicao = new java.text.SimpleDateFormat("HH:mm 'em' dd/MM", java.util.Locale.getDefault());
+            return "Até " + formatoExibicao.format(dataFimObj);
 
         } catch (Exception e) {
             e.printStackTrace();
+            // Caso a API envie um texto já formatado em vez de ISO, exibe a String diretamente
             return dataIso;
         }
     }
