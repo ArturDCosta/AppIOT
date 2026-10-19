@@ -12,7 +12,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.monitorforno.R;
 import com.example.monitorforno.models.TemporizadorResponseDTO;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapter.ViewHolder> {
 
@@ -39,8 +42,8 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         TemporizadorResponseDTO item = temporizadores.get(position);
 
-        String inicio = formatarHoraIso(item.getHorarioInicio());
-        String fim = formatarHoraIso(item.getHorarioFim());
+        String inicio = formatarHoraInstant(item.getHorarioInicio());
+        String fim = formatarHoraInstant(item.getHorarioFim());
 
         holder.txtHorario.setText("Duração: " + inicio + " até " + fim);
 
@@ -52,13 +55,23 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
         });
     }
 
-    private String formatarHoraIso(String isoString) {
-        if (isoString == null || !isoString.contains("T")) return "00:00";
+    private String formatarHoraInstant(String instantString) {
+        if (instantString == null) return "00:00";
         try {
-            String horaParte = isoString.split("T")[1];
-            return horaParte.substring(0, 5);
+            // Retira a parte fracionada e o Z
+            String dataLimpa = instantString.split("\\.")[0].replace("Z", "");
+
+            // Entrada configurada como UTC
+            SimpleDateFormat sdfEntrada = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+            sdfEntrada.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            java.util.Date data = sdfEntrada.parse(dataLimpa);
+
+            // Saída configurada para o horário local (Locale.getDefault() já utiliza a default TimeZone)
+            SimpleDateFormat sdfSaida = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            return sdfSaida.format(data);
         } catch (Exception e) {
-            return isoString;
+            return instantString;
         }
     }
 

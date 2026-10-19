@@ -624,23 +624,25 @@ public class DashboardFragment extends Fragment {
         }
 
         try {
-            // Remove fração de segundos se houver (ex: "2026-10-05T18:00:00.000" -> "2026-10-05T18:00:00")
             String dataLimpa = dataIso.split("\\.")[0];
+            if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
 
-            java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault());
+            // Lê como UTC (Formato Instant da API)
+            java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault());
+            formatoEntrada.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+
             java.util.Date dataFimObj = formatoEntrada.parse(dataLimpa);
 
             if (dataFimObj == null) {
                 return dataIso;
             }
 
-            // Formata para exibir o horário e a data de término de forma clara
+            // Exibe na hora local do dispositivo
             java.text.SimpleDateFormat formatoExibicao = new java.text.SimpleDateFormat("HH:mm 'em' dd/MM", java.util.Locale.getDefault());
             return "Até " + formatoExibicao.format(dataFimObj);
 
         } catch (Exception e) {
             e.printStackTrace();
-            // Caso a API envie um texto já formatado em vez de ISO, exibe a String diretamente
             return dataIso;
         }
     }
