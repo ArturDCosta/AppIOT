@@ -185,10 +185,16 @@ public class HistoricoFragment extends Fragment {
     private String converterIsoParaBr(String iso) {
         if (iso == null || !iso.contains("T")) return "";
         try {
-            String[] partes = iso.split("T")[0].split("-");
-            if (partes.length == 3) {
-                return partes[2] + "/" + partes[1] + "/" + partes[0];
-            }
+            String dataLimpa = iso.split("\\.")[0];
+            if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
+
+            java.text.SimpleDateFormat sdfEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault());
+            sdfEntrada.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date dataObj = sdfEntrada.parse(dataLimpa);
+
+            java.text.SimpleDateFormat sdfSaida = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
+            sdfSaida.setTimeZone(java.util.TimeZone.getDefault());
+            return sdfSaida.format(dataObj);
         } catch (Exception ignored) {}
         return "";
     }

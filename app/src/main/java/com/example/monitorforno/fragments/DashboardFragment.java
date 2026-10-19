@@ -627,7 +627,7 @@ public class DashboardFragment extends Fragment {
             String dataLimpa = dataIso.split("\\.")[0];
             if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
 
-            // Lê como UTC (Formato Instant da API)
+            // Lê como UTC
             java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault());
             formatoEntrada.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
 
@@ -637,8 +637,9 @@ public class DashboardFragment extends Fragment {
                 return dataIso;
             }
 
-            // Exibe na hora local do dispositivo
+            // Exibe como Local
             java.text.SimpleDateFormat formatoExibicao = new java.text.SimpleDateFormat("HH:mm 'em' dd/MM", java.util.Locale.getDefault());
+            formatoExibicao.setTimeZone(java.util.TimeZone.getDefault());
             return "Até " + formatoExibicao.format(dataFimObj);
 
         } catch (Exception e) {

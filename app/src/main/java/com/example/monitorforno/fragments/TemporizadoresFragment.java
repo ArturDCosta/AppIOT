@@ -112,7 +112,8 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
             }
 
             // O backend Spring com ZonedDateTime aceita ISO 8601 com offset. API 24+ suporta XXX
-            SimpleDateFormat sdfIso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault());
+            SimpleDateFormat sdfIso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
+            sdfIso.setTimeZone(TimeZone.getTimeZone("UTC")); // Garante que será enviado em UTC
 
             String isoHorarioInicio;
             if (horaInicioSelecionada != null) {
@@ -216,11 +217,15 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
 
         TemporizadorResponseDTO proximo = null;
         long menorTempoRestante = Long.MAX_VALUE;
-        long agora = System.currentTimeMillis(); // Já é em UTC por natureza
+        long agora = System.currentTimeMillis();
 
-        // Define estritamente o formato sem o 'Z' literal, mas configurado para fuso UTC
-        SimpleDateFormat sdfEntrada = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+        // 1. Lemos estritamente como UTC
+        SimpleDateFormat sdfEntrada = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
         sdfEntrada.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        // 2. Formatamos para a tela estritamente no fuso local do celular (ex: UTC-3)
+        SimpleDateFormat formatoVisor = new SimpleDateFormat("HH:mm\ndd/MM/yyyy", Locale.getDefault());
+        formatoVisor.setTimeZone(TimeZone.getDefault());
 
         List<TemporizadorResponseDTO> listaExpirados = new ArrayList<>();
 
@@ -229,14 +234,13 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
                 String horaFimStr = t.getHorarioFim();
                 if (horaFimStr == null) continue;
 
-                // Corta milissegundos se houver e remove o Z, ficando apenas com "2026-10-16T19:48:00"
-                String dataLimpa = horaFimStr.split("\\.")[0].replace("Z", "");
+                String dataLimpa = horaFimStr.split("\\.")[0];
+                if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
 
-                // O parser vai ler essa string e aplicar o TimeZone UTC que configuramos
                 java.util.Date dataFim = sdfEntrada.parse(dataLimpa);
 
                 if (dataFim != null) {
-                    long tempoFim = dataFim.getTime(); // Converte para epoch millis absolutos
+                    long tempoFim = dataFim.getTime();
 
                     if (tempoFim <= agora) {
                         listaExpirados.add(t);
@@ -264,11 +268,10 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
 
         if (proximo != null) {
             try {
-                String dataLimpa = proximo.getHorarioFim().split("\\.")[0].replace("Z", "");
-                java.util.Date dataFimObj = sdfEntrada.parse(dataLimpa);
+                String dataLimpa = proximo.getHorarioFim().split("\\.")[0];
+                if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
 
-                // Como queremos exibir na tela para o usuário, o formato aqui usa o fuso local automático
-                SimpleDateFormat formatoVisor = new SimpleDateFormat("HH:mm\ndd/MM/yyyy", Locale.getDefault());
+                java.util.Date dataFimObj = sdfEntrada.parse(dataLimpa);
                 txtProximoTempo.setText(formatoVisor.format(dataFimObj));
                 txtProximoTempo.setTextSize(36f);
             } catch (Exception e) {

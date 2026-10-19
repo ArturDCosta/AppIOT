@@ -234,10 +234,25 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
     }
 
     private String formatarHoraSemSegundos(String dataHora) {
-        if (dataHora == null) return "--:--";
-        if (dataHora.contains("T")) {
-            dataHora = dataHora.split("T")[1];
+        if (dataHora == null || dataHora.isEmpty()) return "--:--";
+        try {
+            String dataLimpa = dataHora.split("\\.")[0];
+            if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
+
+            java.text.SimpleDateFormat sdfEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault());
+            sdfEntrada.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date dataObj = sdfEntrada.parse(dataLimpa);
+
+            java.text.SimpleDateFormat sdfSaida = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
+            sdfSaida.setTimeZone(java.util.TimeZone.getDefault());
+            return sdfSaida.format(dataObj);
+        } catch (Exception e) {
+            // Fallback caso venha algo mal formatado
+            if (dataHora.contains("T")) {
+                String hora = dataHora.split("T")[1];
+                return hora.length() >= 5 ? hora.substring(0, 5) : hora;
+            }
+            return dataHora;
         }
-        return dataHora.length() >= 5 ? dataHora.substring(0, 5) : dataHora;
     }
 }

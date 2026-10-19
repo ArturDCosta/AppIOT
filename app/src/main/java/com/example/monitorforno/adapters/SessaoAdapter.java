@@ -14,11 +14,13 @@ import com.example.monitorforno.R;
 import com.example.monitorforno.activities.DetalhesSessaoActivity;
 import com.example.monitorforno.models.SessaoDetalhesDTO;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class SessaoAdapter extends RecyclerView.Adapter<SessaoAdapter.ViewHolder> {
 
-    // Substituímos a classe 'Sessao' pela classe DTO da API
     private final List<SessaoDetalhesDTO> sessoes;
 
     public SessaoAdapter(List<SessaoDetalhesDTO> sessoes) {
@@ -37,26 +39,11 @@ public class SessaoAdapter extends RecyclerView.Adapter<SessaoAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         SessaoDetalhesDTO sessao = sessoes.get(position);
 
-        // 1. Extrai a Data (Dia/Mês/Ano) de dentro de "inicioSessao" (ex: "2026-07-06T14:30:00")
-        String dataFormatada = "--/--/----";
-        String inicioSessao = sessao.getFimSessao();
-        if (inicioSessao != null && inicioSessao.contains("T")) {
-            try {
-                String[] partes = inicioSessao.split("T")[0].split("-");
-                if (partes.length == 3) {
-                    dataFormatada = partes[2] + "/" + partes[1] + "/" + partes[0];
-                }
-            } catch (Exception ignored) {}
-        }
-        holder.txtData.setText(dataFormatada);
+        String inicioSessao = sessao.getInicioSessao(); // Alterado para Inicio para exibir corretamente a data
 
-        // 2. Extrai o Horário (HH:mm)
-        String horaFormatada = "--:--";
-        if (inicioSessao != null && inicioSessao.contains("T")) {
-            String hora = inicioSessao.split("T")[1];
-            horaFormatada = hora.length() >= 5 ? hora.substring(0, 5) : hora;
-        }
-        holder.txtHorario.setText(horaFormatada);
+        // 1 e 2. Formatar Data e Hora para o fuso local
+        holder.txtData.setText(formatarDataHora(inicioSessao, "dd/MM/yyyy"));
+        holder.txtHorario.setText(formatarDataHora(inicioSessao, "HH:mm"));
 
         // 3. Converte duracaoSegundos em Minutos
         long minutos = (sessao.getDuracaoSegundos() != null) ? (sessao.getDuracaoSegundos() / 60) : 0;
@@ -87,6 +74,25 @@ public class SessaoAdapter extends RecyclerView.Adapter<SessaoAdapter.ViewHolder
             intent.putExtra("SESSAO_ID", sessao.getId());
             v.getContext().startActivity(intent);
         });
+    }
+
+    // Função universal de conversão UTC -> Fuso Local do Aparelho
+    private String formatarDataHora(String iso, String padraoSaida) {
+        if (iso == null || iso.isEmpty()) return "--";
+        try {
+            String dataLimpa = iso.split("\\.")[0];
+            if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
+
+            SimpleDateFormat sdfEntrada = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
+            sdfEntrada.setTimeZone(TimeZone.getTimeZone("UTC"));
+            java.util.Date dataObj = sdfEntrada.parse(dataLimpa);
+
+            SimpleDateFormat sdfSaida = new SimpleDateFormat(padraoSaida, Locale.getDefault());
+            sdfSaida.setTimeZone(TimeZone.getDefault());
+            return sdfSaida.format(dataObj);
+        } catch (Exception e) {
+            return iso;
+        }
     }
 
     @Override
