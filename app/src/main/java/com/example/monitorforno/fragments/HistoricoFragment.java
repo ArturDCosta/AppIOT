@@ -230,16 +230,44 @@ public class HistoricoFragment extends Fragment {
         long tempoTotalSegundos = 0;
 
         for (SessaoDetalhesDTO sessao : sessoes) {
-            if (sessao.getDuracaoSegundos() != null) {
+            // 1. Calcula o Tempo Total
+            if (sessao.getDuracaoSegundos() != null && sessao.getDuracaoSegundos() > 0) {
                 tempoTotalSegundos += sessao.getDuracaoSegundos();
+            } else if (sessao.getInicioSessao() != null && sessao.getFimSessao() != null) {
+                // Fallback: Calcula a diferença entre Início e Fim se a API não enviar a duração
+                try {
+                    String inicioLimpo = sessao.getInicioSessao().split("\\.")[0];
+                    if (!inicioLimpo.endsWith("Z")) inicioLimpo += "Z";
+
+                    String fimLimpo = sessao.getFimSessao().split("\\.")[0];
+                    if (!fimLimpo.endsWith("Z")) fimLimpo += "Z";
+
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault());
+                    sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+
+                    java.util.Date dataInicio = sdf.parse(inicioLimpo);
+                    java.util.Date dataFim = sdf.parse(fimLimpo);
+
+                    if (dataInicio != null && dataFim != null) {
+                        long diffInMillies = dataFim.getTime() - dataInicio.getTime();
+                        tempoTotalSegundos += Math.max(0, diffInMillies / 1000);
+                    }
+                } catch (Exception ignored) {}
             }
 
-            if (sessao.getTemperaturas() != null) {
+            // 2. Calcula a Maior Temperatura
+            if (sessao.getTemperaturas() != null && !sessao.getTemperaturas().isEmpty()) {
+                // Modo antigo: Itera sobre a lista de temperaturas se a API a enviar
                 for (int i = 0; i < sessao.getTemperaturas().size(); i++) {
                     if (sessao.getTemperaturas().get(i).getTemperaturaAtual() != null) {
                         double temp = sessao.getTemperaturas().get(i).getTemperaturaAtual();
                         if (temp > maiorTempGlobal) maiorTempGlobal = temp;
                     }
+                }
+            } else if (sessao.getTemperaturaMaxima() != null && sessao.getTemperaturaMaxima() > 0) {
+                // Fallback: Pega o campo pré-calculado do DTO caso a API forneça
+                if (sessao.getTemperaturaMaxima() > maiorTempGlobal) {
+                    maiorTempGlobal = sessao.getTemperaturaMaxima();
                 }
             }
         }
@@ -253,7 +281,7 @@ public class HistoricoFragment extends Fragment {
 
         if (horas > 0) {
             txtTempoTotal.setText("Tempo Total: " + horas + "h " + minutos + "m");
-        } else if (minutos > 0){
+        } else if (minutos > 0) {
             txtTempoTotal.setText("Tempo Total: " + minutos + "m " + segundos + "s");
         } else {
             txtTempoTotal.setText("Tempo Total: " + segundos + "s");
