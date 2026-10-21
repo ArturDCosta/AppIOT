@@ -20,6 +20,7 @@ import com.example.monitorforno.models.ApiService;
 import com.example.monitorforno.models.FotoPerfilRequestDTO;
 import com.example.monitorforno.models.FotoPerfilResponseDTO;
 import com.example.monitorforno.models.NovaSenhaLogadoDTO;
+import com.example.monitorforno.models.RefreshTokenRequestDTO;
 import com.example.monitorforno.models.SolicitarTrocaEmailDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.models.PerfilDTO;
@@ -453,15 +454,38 @@ public class PerfilFragment extends Fragment {
 
     private void fazerLogout() {
         SessionManager sessionManager = new SessionManager(requireContext());
-        sessionManager.limparSessao();
+        String refreshToken = sessionManager.getRefreshToken();
 
+        if (refreshToken != null) {
+            // 1. Criar o objeto DTO com o token
+            RefreshTokenRequestDTO requestDTO = new RefreshTokenRequestDTO(refreshToken);
+
+            ApiService apiService = RetrofitClient.getApiService(requireContext());
+
+            // 2. Passar o objeto DTO para a chamada
+            apiService.logout(requestDTO).enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    finalizarLogoutLocal(sessionManager);
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    // Desloga localmente mesmo se a API falhar (ex: sem internet)
+                    finalizarLogoutLocal(sessionManager);
+                }
+            });
+        } else {
+            finalizarLogoutLocal(sessionManager);
+        }
+    }
+
+    private void finalizarLogoutLocal(SessionManager sessionManager) {
+        sessionManager.limparSessao();
         Intent intent = new Intent(getActivity(), LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
-
-        if (getActivity() != null) {
-            getActivity().finish();
-        }
+        if (getActivity() != null) getActivity().finish();
     }
 
     private boolean isSenhaValida(String senha) {

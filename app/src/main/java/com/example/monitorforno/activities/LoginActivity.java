@@ -113,7 +113,7 @@ public class LoginActivity extends AppCompatActivity {
 
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponseDTO dados = response.body();
-                    sessionManager.salvarSessao(dados.getToken(), dados.getId());
+                    sessionManager.salvarSessao(dados.getToken(), dados.getRefreshtoken(), dados.getId());
 
                     Toast.makeText(LoginActivity.this, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show();
                     irParaMain();

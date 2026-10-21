@@ -8,6 +8,16 @@ import okhttp3.ResponseBody;
 public interface ApiService {
 
     // ==========================================
+    // TOKENS
+    // ==========================================
+
+    @POST("auth/refresh")
+    Call<RefreshTokenResponseDTO> renovarToken(@Body RefreshTokenRequestDTO request);
+
+    @POST("auth/logout")
+    Call<Void> logout(@Body RefreshTokenRequestDTO request);
+
+    // ==========================================
     // AUTH
     // ==========================================
     @POST("v1/auth/login")

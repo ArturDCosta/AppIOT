@@ -58,4 +58,18 @@ public class SessionManager {
     public boolean estaLogado() {
         return prefs.getString(KEY_TOKEN, null) != null;
     }
+
+    private static final String KEY_REFRESH_TOKEN = "refresh_token";
+
+    public void salvarSessao(String token, String refreshToken, String userId) {
+        prefs.edit()
+                .putString(KEY_TOKEN, token)
+                .putString(KEY_REFRESH_TOKEN, refreshToken)
+                .putString(KEY_USER_ID, userId)
+                .apply();
+    }
+
+    public String getRefreshToken() {
+        return prefs.getString(KEY_REFRESH_TOKEN, null);
+    }
 }
