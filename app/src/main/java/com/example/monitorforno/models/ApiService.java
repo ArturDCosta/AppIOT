@@ -26,8 +26,9 @@ public interface ApiService {
     // ==========================================
     // SESSÕES
     // ==========================================
+    // Rota usada no HistoricoFragment (lista leve, sem temperaturas)
     @GET("v1/sessoes/minhas")
-    Call<List<SessaoDetalhesDTO>> minhasSessoes();
+    Call<List<SessaoResumoDTO>> minhasSessoes();
 
     @GET("v1/sessoes/{id}")
     Call<SessaoDetalhesDTO> getSessaoPorId(@Path("id") String id);
@@ -47,14 +48,14 @@ public interface ApiService {
     @GET("v1/telemetrias/forno/{fornoId}/dashboard")
     Call<DashboardDTO> getDashboard(@Path("fornoId") String fornoId);
 
+    @GET("v1/telemetrias/forno/{fornoId}/estatisticas")
+    Call<EstatisticasDTO> getEstatisticasGlobais(@Path("fornoId") String fornoId);
+
     // ==========================================
     // TEMPERATURAS E HISTÓRICO
     // ==========================================
     @GET("v1/temperaturas/minhas")
     Call<List<TemperaturaDTO>> minhasTemperaturas();
-
-    @GET("v1/sessoes")
-    Call<List<Sessao>> getHistoricoSessoes();
 
     @GET("v1/usuario/meu-perfil")
     Call<PerfilDTO> getMeuPerfil();

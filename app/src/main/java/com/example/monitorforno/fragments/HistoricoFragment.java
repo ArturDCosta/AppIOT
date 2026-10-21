@@ -19,7 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.monitorforno.R;
 import com.example.monitorforno.adapters.SessaoAdapter;
 import com.example.monitorforno.models.ApiService;
-import com.example.monitorforno.models.SessaoDetalhesDTO;
+import com.example.monitorforno.models.SessaoResumoDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -35,6 +35,8 @@ import retrofit2.Response;
 
 public class HistoricoFragment extends Fragment {
 
+    private com.example.monitorforno.utils.SessionManager sessionManager;
+
     private RecyclerView recyclerView;
     private TextView txtTotalSessoes, txtTempoTotal, txtMaiorTemperatura;
     private MaterialButton btnOrdenar;
@@ -42,8 +44,9 @@ public class HistoricoFragment extends Fragment {
 
     private SessaoAdapter adapter;
 
-    private List<SessaoDetalhesDTO> listaOriginal = new ArrayList<>();
-    private List<SessaoDetalhesDTO> listaExibida = new ArrayList<>();
+    // AQUI: Atualizado para o DTO de Resumo
+    private List<SessaoResumoDTO> listaOriginal = new ArrayList<>();
+    private List<SessaoResumoDTO> listaExibida = new ArrayList<>();
 
     private boolean ordenadoPorMaisRecentes = true;
 
@@ -51,6 +54,8 @@ public class HistoricoFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_historico, container, false);
 
+        // Inicialize o session manager
+        sessionManager = new com.example.monitorforno.utils.SessionManager(requireContext());
         inicializarViews(view);
         configurarEventos();
         buscarSessoesNaApi();
@@ -71,10 +76,8 @@ public class HistoricoFragment extends Fragment {
     }
 
     private void configurarEventos() {
-        // Alternar ordenação
         btnOrdenar.setOnClickListener(v -> alternarOrdenacao());
 
-        // Pesquisa em tempo real (digitação)
         edtPesquisa.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -88,7 +91,6 @@ public class HistoricoFragment extends Fragment {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Clique longo no campo para abrir o calendário nativo
         edtPesquisa.setOnLongClickListener(v -> {
             abrirSeletorDeData();
             return true;
@@ -97,22 +99,18 @@ public class HistoricoFragment extends Fragment {
 
     private void buscarSessoesNaApi() {
         if (getContext() == null) return;
-
         ApiService apiService = RetrofitClient.getApiService(requireContext());
 
-        apiService.minhasSessoes().enqueue(new Callback<List<SessaoDetalhesDTO>>() {
+        apiService.minhasSessoes().enqueue(new Callback<List<SessaoResumoDTO>>() {
             @Override
-            public void onResponse(@NonNull Call<List<SessaoDetalhesDTO>> call, @NonNull Response<List<SessaoDetalhesDTO>> response) {
-                if (!isAdded() || getContext() == null) return; // Garante que o Fragment ainda está ativo
-
+            public void onResponse(@NonNull Call<List<SessaoResumoDTO>> call, @NonNull Response<List<SessaoResumoDTO>> response) {
+                if (!isAdded() || getContext() == null) return;
                 if (response.isSuccessful() && response.body() != null) {
                     listaOriginal = response.body();
                     listaExibida = new ArrayList<>(listaOriginal);
-
                     aplicarOrdenacaoNaLista();
                     adapter = new SessaoAdapter(listaExibida);
                     recyclerView.setAdapter(adapter);
-
                     calcularEstatisticasGlobais(listaOriginal);
                 } else {
                     Toast.makeText(getContext(), "Erro ao carregar histórico", Toast.LENGTH_SHORT).show();
@@ -120,18 +118,14 @@ public class HistoricoFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<SessaoDetalhesDTO>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<List<SessaoResumoDTO>> call, @NonNull Throwable t) {
                 if (isAdded() && getContext() != null) {
-                    Log.e("HistoricoFragment", "Falha na API: " + t.getMessage());
                     Toast.makeText(getContext(), "Falha na conexão com o servidor", Toast.LENGTH_SHORT).show();
                 }
             }
         });
     }
 
-    // =========================================================================
-    // LÓGICA DE ORDENAÇÃO
-    // =========================================================================
     private void alternarOrdenacao() {
         if (listaExibida.isEmpty()) return;
 
@@ -144,7 +138,6 @@ public class HistoricoFragment extends Fragment {
 
     private void aplicarOrdenacaoNaLista() {
         Collections.sort(listaExibida, (sessao1, sessao2) -> {
-            // NOTA: Se alterou os nomes no DTO, mude aqui para getInicioSessao()
             String data1 = sessao1.getInicioSessao() != null ? sessao1.getInicioSessao() : "";
             String data2 = sessao2.getInicioSessao() != null ? sessao2.getInicioSessao() : "";
 
@@ -152,9 +145,6 @@ public class HistoricoFragment extends Fragment {
         });
     }
 
-    // =========================================================================
-    // LÓGICA DE PESQUISA POR DATA E ESTADO
-    // =========================================================================
     private void filtrarSessoes(String texto) {
         listaExibida.clear();
 
@@ -163,15 +153,12 @@ public class HistoricoFragment extends Fragment {
         } else {
             String busca = texto.toLowerCase().trim();
 
-            for (SessaoDetalhesDTO sessao : listaOriginal) {
-                // NOTA: Se alterou os nomes no DTO, mude aqui para getEstadoFornoFinal() e getInicioSessao()
+            for (SessaoResumoDTO sessao : listaOriginal) {
                 String estado = sessao.getEstadoFornoFinal() != null ? sessao.getEstadoFornoFinal().toLowerCase() : "";
                 String inicioISO = sessao.getInicioSessao() != null ? sessao.getInicioSessao() : "";
 
-                // 1. Converte a data ISO (ex: "2026-07-06T14:30:00") para o padrão BR ("06/07/2026")
                 String dataBR = converterIsoParaBr(inicioISO);
 
-                // 2. Verifica se a busca coincide com o Estado ou com os formatos de data
                 if (estado.contains(busca) || inicioISO.contains(busca) || dataBR.contains(busca)) {
                     listaExibida.add(sessao);
                 }
@@ -199,9 +186,6 @@ public class HistoricoFragment extends Fragment {
         return "";
     }
 
-    // =========================================================================
-    // CALENDÁRIO NATIVO
-    // =========================================================================
     private void abrirSeletorDeData() {
         if (getContext() == null) return;
 
@@ -214,10 +198,7 @@ public class HistoricoFragment extends Fragment {
         dialog.show();
     }
 
-    // =========================================================================
-    // ESTATÍSTICAS DO TOPO
-    // =========================================================================
-    private void calcularEstatisticasGlobais(List<SessaoDetalhesDTO> sessoes) {
+    private void calcularEstatisticasGlobais(List<SessaoResumoDTO> sessoes) {
         if (sessoes == null || sessoes.isEmpty()) {
             txtTotalSessoes.setText("Total de Sessões: 0");
             txtTempoTotal.setText("Tempo Total: 0min");
@@ -229,16 +210,16 @@ public class HistoricoFragment extends Fragment {
         double maiorTempGlobal = 0.0;
         long tempoTotalSegundos = 0;
 
-        for (SessaoDetalhesDTO sessao : sessoes) {
-            // 1. Calcula o Tempo Total
-            if (sessao.getDuracaoSegundos() != null && sessao.getDuracaoSegundos() > 0) {
-                tempoTotalSegundos += sessao.getDuracaoSegundos();
-            } else if (sessao.getInicioSessao() != null && sessao.getFimSessao() != null) {
-                // Fallback: Calcula a diferença entre Início e Fim se a API não enviar a duração
+        for (SessaoResumoDTO sessao : sessoes) {
+
+            if (sessao.getTemperaturaMaxima() != null && sessao.getTemperaturaMaxima() > maiorTempGlobal) {
+                maiorTempGlobal = sessao.getTemperaturaMaxima();
+            }
+
+            if (sessao.getInicioSessao() != null && sessao.getFimSessao() != null) {
                 try {
                     String inicioLimpo = sessao.getInicioSessao().split("\\.")[0];
                     if (!inicioLimpo.endsWith("Z")) inicioLimpo += "Z";
-
                     String fimLimpo = sessao.getFimSessao().split("\\.")[0];
                     if (!fimLimpo.endsWith("Z")) fimLimpo += "Z";
 
@@ -249,26 +230,9 @@ public class HistoricoFragment extends Fragment {
                     java.util.Date dataFim = sdf.parse(fimLimpo);
 
                     if (dataInicio != null && dataFim != null) {
-                        long diffInMillies = dataFim.getTime() - dataInicio.getTime();
-                        tempoTotalSegundos += Math.max(0, diffInMillies / 1000);
+                        tempoTotalSegundos += Math.max(0, (dataFim.getTime() - dataInicio.getTime()) / 1000);
                     }
                 } catch (Exception ignored) {}
-            }
-
-            // 2. Calcula a Maior Temperatura
-            if (sessao.getTemperaturas() != null && !sessao.getTemperaturas().isEmpty()) {
-                // Modo antigo: Itera sobre a lista de temperaturas se a API a enviar
-                for (int i = 0; i < sessao.getTemperaturas().size(); i++) {
-                    if (sessao.getTemperaturas().get(i).getTemperaturaAtual() != null) {
-                        double temp = sessao.getTemperaturas().get(i).getTemperaturaAtual();
-                        if (temp > maiorTempGlobal) maiorTempGlobal = temp;
-                    }
-                }
-            } else if (sessao.getTemperaturaMaxima() != null && sessao.getTemperaturaMaxima() > 0) {
-                // Fallback: Pega o campo pré-calculado do DTO caso a API forneça
-                if (sessao.getTemperaturaMaxima() > maiorTempGlobal) {
-                    maiorTempGlobal = sessao.getTemperaturaMaxima();
-                }
             }
         }
 

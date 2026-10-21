@@ -12,7 +12,6 @@ import com.example.monitorforno.R;
 import com.example.monitorforno.models.EsqueciSenhaDTO;
 import com.example.monitorforno.models.LoginRequestDTO;
 import com.example.monitorforno.models.LoginResponseDTO;
-import com.example.monitorforno.models.SessaoDetalhesDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
@@ -65,47 +64,23 @@ public class LoginActivity extends AppCompatActivity {
         btnEntrar.setEnabled(false);
         btnEntrar.setText("Conectando ao servidor...");
 
-        RetrofitClient.getApiService(this).minhasSessoes().enqueue(new Callback<List<SessaoDetalhesDTO>>() {
+        RetrofitClient.getApiService(this).minhasSessoes().enqueue(new Callback<List<com.example.monitorforno.models.SessaoResumoDTO>>() {
             @Override
-            public void onResponse(Call<List<SessaoDetalhesDTO>> call, Response<List<SessaoDetalhesDTO>> response) {
+            public void onResponse(Call<List<com.example.monitorforno.models.SessaoResumoDTO>> call, Response<List<com.example.monitorforno.models.SessaoResumoDTO>> response) {
                 if (response.isSuccessful()) {
                     irParaMain();
                 } else {
                     btnEntrar.setEnabled(true);
                     btnEntrar.setText("Entrar");
-
-                    String mensagemErro;
-                    switch (response.code()) {
-                        case 400:
-                            mensagemErro = "Formato inválido. Verifique se digitou o e-mail e a senha corretamente.";
-                            break;
-                        case 403:
-                            mensagemErro = "E-mail ou senha incorretos. Tente novamente.";
-                            break;
-                        case 404:
-                            mensagemErro = "Servidor não encontrado. Verifique se o aplicativo está atualizado.";
-                            break;
-                        case 408:
-                            mensagemErro = "Tempo de conexão esgotado. Verifique sua internet.";
-                            break;
-                        case 500:
-                        case 502:
-                        case 503:
-                            mensagemErro = "Problema interno no servidor. Nossa equipe já está verificando, tente mais tarde.";
-                            break;
-                        default:
-                            mensagemErro = "Erro inesperado ao conectar (Código: " + response.code() + ").";
-                            break;
-                    }
-                    Toast.makeText(LoginActivity.this, mensagemErro, Toast.LENGTH_LONG).show();
+                    Toast.makeText(LoginActivity.this, "Erro na sessão (Código: " + response.code() + ").", Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<List<SessaoDetalhesDTO>> call, Throwable t) {
+            public void onFailure(Call<List<com.example.monitorforno.models.SessaoResumoDTO>> call, Throwable t) {
                 btnEntrar.setEnabled(true);
                 btnEntrar.setText("Entrar");
-                Toast.makeText(LoginActivity.this, "Servidor offline ou sem conexão. Verifique sua rede.", Toast.LENGTH_LONG).show();
+                Toast.makeText(LoginActivity.this, "Servidor offline ou sem conexão.", Toast.LENGTH_LONG).show();
             }
         });
     }

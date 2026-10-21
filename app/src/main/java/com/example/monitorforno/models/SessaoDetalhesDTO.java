@@ -35,8 +35,13 @@ public class SessaoDetalhesDTO {
     @SerializedName("eventos")
     private List<EventoSessao> eventos;
 
-    // Métricas calculadas localmente no App se necessário
+    // =========================================
+    // VARIÁVEIS ATUALIZADAS PARA RECEBER DA API
+    // =========================================
+    @SerializedName("temperaturaMaxima")
     private Double temperaturaMaxima;
+
+    @SerializedName("temperaturaMedia")
     private Double temperaturaMedia;
 
     // =========================================
@@ -73,7 +78,7 @@ public class SessaoDetalhesDTO {
     }
 
     // =========================================
-    // SETTERS (Úteis para as métricas calculadas no App)
+    // SETTERS
     // =========================================
 
     public void setTemperaturaMaxima(Double temperaturaMaxima) {
