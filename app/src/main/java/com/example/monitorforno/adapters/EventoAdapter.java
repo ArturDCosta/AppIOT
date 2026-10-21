@@ -90,17 +90,21 @@ public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.EventoView
             return "--/--/---- - --:--";
         }
         try {
-            // Separa "2026-07-28T16:01:00" em ["2026-07-28", "16:01:00"]
-            String[] partes = dataOriginal.split("T");
+            // Remove milissegundos e garante o formato UTC (Z)
+            String dataLimpa = dataOriginal.split("\\.")[0];
+            if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
 
-            // Separa "2026-07-28" em ["2026", "07", "28"]
-            String[] dataPartes = partes[0].split("-");
-            String dataFormatada = dataPartes[2] + "/" + dataPartes[1] + "/" + dataPartes[0];
+            // Lê a data original indicando que ela está no fuso UTC (0)
+            java.text.SimpleDateFormat sdfEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault());
+            sdfEntrada.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
 
-            // Pega "16:01"
-            String horaFormatada = partes[1].substring(0, 5);
+            java.util.Date dataObj = sdfEntrada.parse(dataLimpa);
 
-            return dataFormatada + " - " + horaFormatada;
+            // Formata a data para o fuso horário atual do telemóvel
+            java.text.SimpleDateFormat sdfSaida = new java.text.SimpleDateFormat("dd/MM/yyyy - HH:mm", java.util.Locale.getDefault());
+            sdfSaida.setTimeZone(java.util.TimeZone.getDefault());
+
+            return sdfSaida.format(dataObj);
         } catch (Exception e) {
             return dataOriginal;
         }

@@ -101,17 +101,25 @@ public class EventoSessaoAdapter extends RecyclerView.Adapter<EventoSessaoAdapte
             return "--/--/---- - --:--";
         }
         try {
-            String[] partes = dataOriginal.split("T");
-            String[] dataPartes = partes[0].split("-");
-            String dataFormatada = dataPartes[2] + "/" + dataPartes[1] + "/" + dataPartes[0];
-            String horaFormatada = partes[1].length() >= 5 ? partes[1].substring(0, 5) : partes[1];
+            // Remove milissegundos e garante o formato UTC (Z)
+            String dataLimpa = dataOriginal.split("\\.")[0];
+            if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
 
-            return dataFormatada + " - " + horaFormatada;
+            // Lê a data original indicando que ela está no fuso UTC (0)
+            java.text.SimpleDateFormat sdfEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault());
+            sdfEntrada.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+
+            java.util.Date dataObj = sdfEntrada.parse(dataLimpa);
+
+            // Formata a data para o fuso horário atual do telemóvel
+            java.text.SimpleDateFormat sdfSaida = new java.text.SimpleDateFormat("dd/MM/yyyy - HH:mm", java.util.Locale.getDefault());
+            sdfSaida.setTimeZone(java.util.TimeZone.getDefault());
+
+            return sdfSaida.format(dataObj);
         } catch (Exception e) {
             return dataOriginal;
         }
     }
-
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView txtEvento;
         TextView txtHorario;
