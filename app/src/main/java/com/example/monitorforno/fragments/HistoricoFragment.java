@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.monitorforno.R;
 import com.example.monitorforno.adapters.SessaoAdapter;
 import com.example.monitorforno.models.ApiService;
+import com.example.monitorforno.models.EstatisticasDTO;
 import com.example.monitorforno.models.SessaoResumoDTO;
 import com.example.monitorforno.network.RetrofitClient;
 import com.google.android.material.button.MaterialButton;
@@ -58,7 +59,12 @@ public class HistoricoFragment extends Fragment {
         sessionManager = new com.example.monitorforno.utils.SessionManager(requireContext());
         inicializarViews(view);
         configurarEventos();
+
+        // Mantém a busca de sessões/tempo
         buscarSessoesNaApi();
+
+        // NOVA CHAMADA: Busca a temperatura máxima
+        buscarTemperaturaMaximaNaApi();
 
         return view;
     }
@@ -201,21 +207,14 @@ public class HistoricoFragment extends Fragment {
     private void calcularEstatisticasGlobais(List<SessaoResumoDTO> sessoes) {
         if (sessoes == null || sessoes.isEmpty()) {
             txtTotalSessoes.setText("Total de Sessões: 0");
-            txtTempoTotal.setText("Tempo Total: 0min");
-            txtMaiorTemperatura.setText("Maior Temperatura: --°C");
+            txtTempoTotal.setText("Tempo Total: 0s");
             return;
         }
 
         int totalSessoes = sessoes.size();
-        double maiorTempGlobal = 0.0;
         long tempoTotalSegundos = 0;
 
         for (SessaoResumoDTO sessao : sessoes) {
-
-            if (sessao.getTemperaturaMaxima() != null && sessao.getTemperaturaMaxima() > maiorTempGlobal) {
-                maiorTempGlobal = sessao.getTemperaturaMaxima();
-            }
-
             if (sessao.getInicioSessao() != null && sessao.getFimSessao() != null) {
                 try {
                     String inicioLimpo = sessao.getInicioSessao().split("\\.")[0];
@@ -241,7 +240,6 @@ public class HistoricoFragment extends Fragment {
         long segundos = tempoTotalSegundos % 60;
 
         txtTotalSessoes.setText("Total de Sessões: " + totalSessoes);
-        txtMaiorTemperatura.setText("Maior Temperatura: " + Math.round(maiorTempGlobal) + "°C");
 
         if (horas > 0) {
             txtTempoTotal.setText("Tempo Total: " + horas + "h " + minutos + "m");
@@ -250,5 +248,41 @@ public class HistoricoFragment extends Fragment {
         } else {
             txtTempoTotal.setText("Tempo Total: " + segundos + "s");
         }
+    }
+
+    private void buscarTemperaturaMaximaNaApi() {
+        String fornoId = sessionManager.getFornoSelecionadoId();
+
+        // 1. Verifica se o ID foi pego do SessionManager
+        if (fornoId == null || fornoId.isEmpty()) {
+            txtMaiorTemperatura.setText("Erro: ID do forno vazio");
+            return;
+        }
+
+        ApiService apiService = RetrofitClient.getApiService(requireContext());
+        apiService.getEstatisticasGlobais(fornoId).enqueue(new Callback<EstatisticasDTO>() {
+            @Override
+            public void onResponse(@NonNull Call<EstatisticasDTO> call, @NonNull Response<EstatisticasDTO> response) {
+                if (!isAdded() || getContext() == null) return;
+
+                if (response.isSuccessful() && response.body() != null) {
+                    double maxTemp = response.body().getTemperaturaMaxima();
+                    txtMaiorTemperatura.setText("Maior Temperatura: " + Math.round(maxTemp) + "°C");
+                } else {
+                    // 2. Mostra o código de erro exato da API
+                    txtMaiorTemperatura.setText("Erro API: " + response.code());
+                    Toast.makeText(getContext(), "Erro Temp: " + response.code(), Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<EstatisticasDTO> call, @NonNull Throwable t) {
+                if (isAdded() && getContext() != null) {
+                    // 3. Mostra se houve falha de conexão
+                    txtMaiorTemperatura.setText("Falha de conexão");
+                    Toast.makeText(getContext(), "Falha Temp: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            }
+        });
     }
 }
