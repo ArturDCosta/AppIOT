@@ -50,7 +50,7 @@
                 android:background="@color/card_dark"
                 android:padding="20dp">
 
-                <!-- Container horizontal para o Nome e o Lápis -->
+                <!-- Container horizontal para o Nome, Lápis e Partilha -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -77,6 +77,20 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:contentDescription="Editar nome do forno"/>
+
+                    <!-- NOVO BOTÃO DE PARTILHA -->
+                    <ImageView
+                        android:id="@+id/btnCompartilharForno"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="12dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_menu_share"
+                        app:tint="@color/white"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="Partilhar forno"/>
                 </LinearLayout>
 
                 <TextView

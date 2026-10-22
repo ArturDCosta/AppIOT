@@ -94,6 +94,28 @@ public interface ApiService {
     Call<Void> alterarMinhaSenha(@Body NovaSenhaLogadoDTO dto);
 
     // ==========================================
+    // FORNO COMPARTILHADO
+    // ==========================================
+    @POST("forno-compartilhado")
+    Call<Void> enviarConvite(@Body FornoCompartilhadoRequestDTO dto);
+
+    @DELETE("forno-compartilhado")
+    Call<Void> removerConvite(@Body FornoCompartilhadoRequestDTO dto);
+
+    @GET("forno-compartilhado/listar?status=PENDENTE")
+    Call<List<ConviteResponseDTO>> listarConvitesPendentes();
+
+    @PUT("forno-compartilhado/aceitar")
+    Call<Void> aceitarConvite(@Body FornoCompartilhadoRequestDTO request);
+
+    @PUT("forno-compartilhado/recusar")
+    Call<Void> recusarConvite(@Body FornoCompartilhadoRequestDTO request);
+
+    // O status passado deve corresponder ao Enum do Spring (ex: "PENDENTE", "ACEITO")
+    @GET("forno-compartilhado/listar")
+    Call<List<FornoCompartilhadoResponseDTO>> listarConvites(@Query("status") String status);
+
+    // ==========================================
     // TEMPORIZADORES
     // ==========================================
     @POST("v1/temporizadores/forno/{fornoId}")

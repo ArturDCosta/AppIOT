@@ -28,6 +28,7 @@ import com.example.monitorforno.models.ApiService;
 import com.example.monitorforno.models.DashboardDTO;
 import com.example.monitorforno.models.EventoDTO;
 import com.example.monitorforno.models.FornoAtualizarDTO;
+import com.example.monitorforno.models.FornoCompartilhadoRequestDTO;
 import com.example.monitorforno.models.FornoResponseDTO;
 import com.example.monitorforno.models.VincularFornoDTO;
 import com.example.monitorforno.network.RetrofitClient;
@@ -56,6 +57,7 @@ public class DashboardFragment extends Fragment {
     private MaterialCardView cardEstadoForno, cardTemperaturaAtual, cardUltimaTemperatura;
     private RecyclerView recyclerAlertas;
     private ImageView btnEditarNomeForno;
+    private ImageView btnCompartilharForno; //compartilhar fornos
 
     private Spinner spinnerFornos;
     private MaterialButton btnEscaneadorQr, btnMutarBuzzer;
@@ -153,6 +155,8 @@ public class DashboardFragment extends Fragment {
         btnEditarNomeForno.setOnClickListener(v -> abrirDialogEditarNome());
         btnMutarBuzzer = view.findViewById(R.id.btnMutarBuzzer);
         btnMutarBuzzer.setOnClickListener(v -> mutarBuzzerDoForno());
+        btnCompartilharForno = view.findViewById(R.id.btnCompartilharForno);
+        btnCompartilharForno.setOnClickListener(v -> abrirDialogCompartilhar());
 
         return view;
     }
@@ -586,6 +590,71 @@ public class DashboardFragment extends Fragment {
         });
     }
 
+    private void abrirDialogCompartilhar() {
+        if (getContext() == null || spinnerFornos == null || spinnerFornos.getSelectedItem() == null) {
+            Toast.makeText(getContext(), "Nenhum forno selecionado para partilhar.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FornoResponseDTO fornoSelecionado = (FornoResponseDTO) spinnerFornos.getSelectedItem();
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getContext());
+        View view = getLayoutInflater().inflate(R.layout.dialog_compartilhar_forno, null);
+
+        com.google.android.material.textfield.TextInputEditText edtEmail = view.findViewById(R.id.edtEmailConvite);
+        MaterialButton btnEnviar = view.findViewById(R.id.btnEnviarConvite);
+        MaterialButton btnCancelar = view.findViewById(R.id.btnCancelarConvite);
+
+        builder.setView(view);
+        android.app.AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnEnviar.setOnClickListener(v -> {
+            String email = edtEmail.getText() != null ? edtEmail.getText().toString().trim() : "";
+
+            if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                edtEmail.setError("Digite um e-mail válido");
+                return;
+            }
+
+            enviarConviteApi(fornoSelecionado.getSerialNumber(), email);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void enviarConviteApi(String serialNumber, String email) {
+        if (getContext() == null) return;
+
+        ApiService apiService = RetrofitClient.getApiService(getContext());
+        FornoCompartilhadoRequestDTO request = new FornoCompartilhadoRequestDTO(serialNumber, email);
+
+        apiService.enviarConvite(request).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Convite enviado para " + email, Toast.LENGTH_SHORT).show();
+                } else if (response.code() == 404) {
+                    Toast.makeText(getContext(), "Utilizador não encontrado.", Toast.LENGTH_SHORT).show();
+                } else if (response.code() == 409) {
+                    Toast.makeText(getContext(), "Convite já enviado ou utilizador já vinculado.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Erro ao enviar convite.", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(getContext(), "Falha de ligação.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
     private void mutarBuzzerDoForno() {
         if (spinnerFornos == null || spinnerFornos.getSelectedItem() == null) {
             Toast.makeText(getContext(), "Nenhum forno selecionado.", Toast.LENGTH_SHORT).show();

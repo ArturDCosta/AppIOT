@@ -26,6 +26,7 @@ import com.example.monitorforno.network.RetrofitClient;
 import com.example.monitorforno.models.PerfilDTO;
 import com.example.monitorforno.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -36,6 +37,7 @@ public class PerfilFragment extends Fragment {
     private TextView txtNomePerfil, txtEmailPerfil, txtNome, txtEmail, txtNascimento;
     private ImageView imgFotoPerfil;
     private View cardIconeEdicao;
+    private MaterialCardView cardMeusConvites;
     private androidx.activity.result.ActivityResultLauncher<String> galeriaLauncher;
     private boolean usuarioJaPossuiFoto = false; // Controle para saber se chama POST ou PUT
 
@@ -92,6 +94,15 @@ public class PerfilFragment extends Fragment {
                 }
             });
         }
+
+        cardMeusConvites = view.findViewById(R.id.cardMeusConvites);
+        cardMeusConvites.setOnClickListener(v -> {
+            // Navegar para o ecrã de convites
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, new ConvitesFragment()) // Substitua 'fragment_container' pelo ID correto do contentor da sua MainActivity, se for diferente
+                    .addToBackStack(null) // Permite voltar ao perfil pressionando o botão de voltar do telemóvel
+                    .commit();
+        });
 
         return view;
     }
