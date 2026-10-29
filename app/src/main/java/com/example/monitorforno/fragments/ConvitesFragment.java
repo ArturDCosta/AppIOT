@@ -16,8 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.monitorforno.R;
 import com.example.monitorforno.adapters.ConvitesAdapter;
 import com.example.monitorforno.models.ApiService;
-import com.example.monitorforno.models.ConviteResponseDTO;
 import com.example.monitorforno.models.FornoCompartilhadoRequestDTO;
+import com.example.monitorforno.models.FornoCompartilhadoResponseDTO;
 import com.example.monitorforno.network.RetrofitClient;
 
 import java.util.ArrayList;
@@ -32,7 +32,9 @@ public class ConvitesFragment extends Fragment implements ConvitesAdapter.OnConv
     private RecyclerView recyclerConvites;
     private TextView txtSemConvites;
     private ConvitesAdapter adapter;
-    private List<ConviteResponseDTO> listaConvites = new ArrayList<>();
+
+    // CORREÇÃO 1: Atualizado o tipo da lista global
+    private List<FornoCompartilhadoResponseDTO> listaConvites = new ArrayList<>();
 
     @Nullable
     @Override
@@ -53,10 +55,13 @@ public class ConvitesFragment extends Fragment implements ConvitesAdapter.OnConv
         if (getContext() == null) return;
 
         ApiService apiService = RetrofitClient.getApiService(getContext());
-        apiService.listarConvitesPendentes().enqueue(new Callback<List<ConviteResponseDTO>>() {
+
+        apiService.listarConvitesPendentes().enqueue(new Callback<List<FornoCompartilhadoResponseDTO>>() {
             @Override
-            public void onResponse(Call<List<ConviteResponseDTO>> call, Response<List<ConviteResponseDTO>> response) {
+            public void onResponse(Call<List<FornoCompartilhadoResponseDTO>> call, Response<List<FornoCompartilhadoResponseDTO>> response) {
                 if (response.isSuccessful() && response.body() != null) {
+
+                    // CORREÇÃO 2: Removido o 'private List<...>' que estava causando erro sintático
                     listaConvites = response.body();
 
                     if (listaConvites.isEmpty()) {
@@ -74,39 +79,41 @@ public class ConvitesFragment extends Fragment implements ConvitesAdapter.OnConv
             }
 
             @Override
-            public void onFailure(Call<List<ConviteResponseDTO>> call, Throwable t) {
+            public void onFailure(Call<List<FornoCompartilhadoResponseDTO>> call, Throwable t) {
                 Toast.makeText(getContext(), "Falha de ligação.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
+    // CORREÇÃO 3: Assinatura dos métodos corrigida para o novo modelo
     @Override
-    public void onAceitar(ConviteResponseDTO convite, int position) {
+    public void onAceitar(FornoCompartilhadoResponseDTO convite, int position) {
         responderConvite(convite, position, true);
     }
 
     @Override
-    public void onRecusar(ConviteResponseDTO convite, int position) {
+    public void onRecusar(FornoCompartilhadoResponseDTO convite, int position) {
         responderConvite(convite, position, false);
     }
 
-    private void responderConvite(ConviteResponseDTO convite, int position, boolean isAceitar) {
+    // CORREÇÃO 4: Atualizado o método auxiliar
+    private void responderConvite(FornoCompartilhadoResponseDTO convite, int position, boolean isAceitar) {
         if (getContext() == null) return;
 
         ApiService apiService = RetrofitClient.getApiService(getContext());
-        FornoCompartilhadoRequestDTO request = new FornoCompartilhadoRequestDTO(convite.getSerialNumber(), "");
+        // Incluído o e-mail proveniente do convite, caso o servidor necessite validar
+        FornoCompartilhadoRequestDTO request = new FornoCompartilhadoRequestDTO(convite.getSerialNumber(), convite.getEmail());
 
-        // Substituímos o operador ternário por um if/else tradicional
-        Call<Void> call;
+        Call<FornoCompartilhadoResponseDTO> call;
         if (isAceitar) {
             call = apiService.aceitarConvite(request);
         } else {
             call = apiService.recusarConvite(request);
         }
 
-        call.enqueue(new Callback<Void>() {
+        call.enqueue(new Callback<FornoCompartilhadoResponseDTO>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
+            public void onResponse(Call<FornoCompartilhadoResponseDTO> call, Response<FornoCompartilhadoResponseDTO> response) {
                 if (response.isSuccessful()) {
                     String acao = isAceitar ? "aceite" : "recusado";
                     Toast.makeText(getContext(), "Convite " + acao + " com sucesso!", Toast.LENGTH_SHORT).show();
@@ -122,7 +129,7 @@ public class ConvitesFragment extends Fragment implements ConvitesAdapter.OnConv
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
+            public void onFailure(Call<FornoCompartilhadoResponseDTO> call, Throwable t) {
                 Toast.makeText(getContext(), "Falha de ligação.", Toast.LENGTH_SHORT).show();
             }
         });

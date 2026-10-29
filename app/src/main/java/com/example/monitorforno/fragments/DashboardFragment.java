@@ -635,23 +635,38 @@ public class DashboardFragment extends Fragment {
         ApiService apiService = RetrofitClient.getApiService(getContext());
         FornoCompartilhadoRequestDTO request = new FornoCompartilhadoRequestDTO(serialNumber, email);
 
+        Log.d("DEBUG_COMPARTILHAR", "Iniciando envio de convite: Serial=" + serialNumber + ", Email=" + email);
+
         apiService.enviarConvite(request).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
+                    Log.d("DEBUG_COMPARTILHAR", "Sucesso: Convite enviado para " + email);
                     Toast.makeText(getContext(), "Convite enviado para " + email, Toast.LENGTH_SHORT).show();
                 } else if (response.code() == 404) {
+                    Log.e("DEBUG_COMPARTILHAR", "Erro 404: Utilizador não encontrado. Verifique se o e-mail existe na base de dados.");
                     Toast.makeText(getContext(), "Utilizador não encontrado.", Toast.LENGTH_SHORT).show();
                 } else if (response.code() == 409) {
+                    Log.e("DEBUG_COMPARTILHAR", "Erro 409: Conflito. Convite já enviado ou utilizador já vinculado a este forno.");
                     Toast.makeText(getContext(), "Convite já enviado ou utilizador já vinculado.", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getContext(), "Erro ao enviar convite.", Toast.LENGTH_SHORT).show();
+                    // CAPTURA DO ERRO REAL DO SPRING BOOT
+                    try {
+                        String erroBackend = response.errorBody() != null ? response.errorBody().string() : "Corpo de erro vazio";
+                        Log.e("DEBUG_COMPARTILHAR", "Erro HTTP " + response.code() + " do Backend: " + erroBackend);
+                        Toast.makeText(getContext(), "Erro " + response.code() + ": " + erroBackend, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Log.e("DEBUG_COMPARTILHAR", "Falha ao tentar ler a mensagem de erro HTTP " + response.code(), e);
+                        Toast.makeText(getContext(), "Erro HTTP " + response.code(), Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                Toast.makeText(getContext(), "Falha de ligação.", Toast.LENGTH_SHORT).show();
+                // MOSTRA O MOTIVO DA FALHA (Crash de conversão, falta de internet, etc)
+                Log.e("DEBUG_COMPARTILHAR", "Falha crítica de ligação/Gson: " + t.getMessage(), t);
+                Toast.makeText(getContext(), "Falha de ligação: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

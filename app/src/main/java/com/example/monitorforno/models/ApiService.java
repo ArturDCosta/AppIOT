@@ -96,25 +96,23 @@ public interface ApiService {
     // ==========================================
     // FORNO COMPARTILHADO
     // ==========================================
-    @POST("forno-compartilhado")
+    @POST("v1/forno-compartilhado")
     Call<Void> enviarConvite(@Body FornoCompartilhadoRequestDTO dto);
 
-    @DELETE("forno-compartilhado")
+    @DELETE("v1/forno-compartilhado")
     Call<Void> removerConvite(@Body FornoCompartilhadoRequestDTO dto);
 
-    @GET("forno-compartilhado/listar?status=PENDENTE")
-    Call<List<ConviteResponseDTO>> listarConvitesPendentes();
+    @GET("v1/forno-compartilhado/listar?status=PENDENTE")
+    Call<List<FornoCompartilhadoResponseDTO>> listarConvitesPendentes();
 
-    @PUT("forno-compartilhado/aceitar")
-    Call<Void> aceitarConvite(@Body FornoCompartilhadoRequestDTO request);
+    @PUT("v1/forno-compartilhado/aceitar")
+    Call<FornoCompartilhadoResponseDTO> aceitarConvite(@Body FornoCompartilhadoRequestDTO request);
 
-    @PUT("forno-compartilhado/recusar")
-    Call<Void> recusarConvite(@Body FornoCompartilhadoRequestDTO request);
+    @PUT("v1/forno-compartilhado/recusar")
+    Call<FornoCompartilhadoResponseDTO> recusarConvite(@Body FornoCompartilhadoRequestDTO request);
 
-    // O status passado deve corresponder ao Enum do Spring (ex: "PENDENTE", "ACEITO")
-    @GET("forno-compartilhado/listar")
+    @GET("v1/forno-compartilhado/listar")
     Call<List<FornoCompartilhadoResponseDTO>> listarConvites(@Query("status") String status);
-
     // ==========================================
     // TEMPORIZADORES
     // ==========================================
