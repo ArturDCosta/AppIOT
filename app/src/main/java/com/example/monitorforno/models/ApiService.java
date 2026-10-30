@@ -40,6 +40,9 @@ public interface ApiService {
     @GET("v1/sessoes/minhas")
     Call<List<SessaoResumoDTO>> minhasSessoes();
 
+    @GET("v1/sessoes/fornos/{fornoId}")
+    Call<List<SessaoResumoDTO>> minhasSessoesDoForno(@Path("fornoId") String fornoId);
+
     @GET("v1/sessoes/{id}")
     Call<SessaoDetalhesDTO> getSessaoPorId(@Path("id") String id);
 

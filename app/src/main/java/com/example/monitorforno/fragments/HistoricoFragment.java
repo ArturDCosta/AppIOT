@@ -102,34 +102,75 @@ public class HistoricoFragment extends Fragment {
             return true;
         });
     }
-
     private void buscarSessoesNaApi() {
+
         if (getContext() == null) return;
-        ApiService apiService = RetrofitClient.getApiService(requireContext());
 
-        apiService.minhasSessoes().enqueue(new Callback<List<SessaoResumoDTO>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<SessaoResumoDTO>> call, @NonNull Response<List<SessaoResumoDTO>> response) {
-                if (!isAdded() || getContext() == null) return;
-                if (response.isSuccessful() && response.body() != null) {
-                    listaOriginal = response.body();
-                    listaExibida = new ArrayList<>(listaOriginal);
-                    aplicarOrdenacaoNaLista();
-                    adapter = new SessaoAdapter(listaExibida);
-                    recyclerView.setAdapter(adapter);
-                    calcularEstatisticasGlobais(listaOriginal);
-                } else {
-                    Toast.makeText(getContext(), "Erro ao carregar histórico", Toast.LENGTH_SHORT).show();
-                }
-            }
+        String fornoId = sessionManager.getFornoSelecionadoId();
 
-            @Override
-            public void onFailure(@NonNull Call<List<SessaoResumoDTO>> call, @NonNull Throwable t) {
-                if (isAdded() && getContext() != null) {
-                    Toast.makeText(getContext(), "Falha na conexão com o servidor", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        if (fornoId == null || fornoId.isEmpty()) {
+            Toast.makeText(
+                    getContext(),
+                    "Nenhum forno selecionado",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        ApiService apiService =
+                RetrofitClient.getApiService(requireContext());
+
+        apiService.minhasSessoesDoForno(fornoId)
+                .enqueue(new Callback<List<SessaoResumoDTO>>() {
+
+                    @Override
+                    public void onResponse(
+                            Call<List<SessaoResumoDTO>> call,
+                            Response<List<SessaoResumoDTO>> response) {
+
+                        if (!isAdded() || getContext() == null) return;
+
+                        if (response.isSuccessful() && response.body() != null) {
+
+                            listaOriginal = response.body();
+
+                            listaExibida =
+                                    new ArrayList<>(listaOriginal);
+
+                            aplicarOrdenacaoNaLista();
+
+                            adapter = new SessaoAdapter(listaExibida);
+
+                            recyclerView.setAdapter(adapter);
+
+                            calcularEstatisticasGlobais(listaOriginal);
+
+                        } else {
+
+                            Toast.makeText(
+                                    getContext(),
+                                    "Erro ao carregar histórico",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(
+                            Call<List<SessaoResumoDTO>> call,
+                            Throwable t) {
+
+                        if (!isAdded() || getContext() == null) return;
+
+                        if (call.isCanceled()) return;
+
+                        Toast.makeText(
+                                getContext(),
+                                "Erro de conexão ao carregar histórico",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                });
     }
 
     private void alternarOrdenacao() {
