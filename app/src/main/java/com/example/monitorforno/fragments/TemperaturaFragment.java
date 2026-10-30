@@ -105,10 +105,6 @@ public class TemperaturaFragment extends Fragment {
                     @Override
                     public void onResponse(Call<TelemetriaResponseDTO> call, Response<TelemetriaResponseDTO> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            Gson gson = new Gson();
-                            String json = gson.toJson(response.body());
-
-                            Log.d("API_TEMPERATURA", "Resposta JSON: " + json);
                             TelemetriaResponseDTO telemetria = response.body();
 
                             String estadoForno = telemetria.getEstadoForno() != null ? telemetria.getEstadoForno() : "FORNO_DESLIGADO";
