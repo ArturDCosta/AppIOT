@@ -69,19 +69,21 @@ public class DashboardFragment extends Fragment {
     // 1. HANDLER E RUNNABLE (Para atualização automática a cada 5 segundos)
     // =====================================================================
     private Handler autoUpdateHandler = new Handler(Looper.getMainLooper());
+    // debug requicições
+    private boolean atualizacaoDashboardEmAndamento = false;
+    private int requisicoesDashboardPendentes = 0;
+    private long cicloDashboard = 0;
+
+    private Call<DashboardDTO> chamadaDashboard;
+    private Call<List<EventoDTO>> chamadaAlertas;
+
     private Runnable autoUpdateRunnable = new Runnable() {
         @Override
         public void run() {
-            // Verifica se há algum forno selecionado no Spinner
-            if (spinnerFornos != null && spinnerFornos.getSelectedItem() != null) {
-                FornoResponseDTO fornoSelecionado = (FornoResponseDTO) spinnerFornos.getSelectedItem();
 
-                // Recarrega os dados do forno atual de forma "silenciosa" (sem loadings intrusivos)
-                carregarDadosDoDashboard(fornoSelecionado.getId(), fornoSelecionado.getNome());
-                carregarAlertasReaisNoDashboard(fornoSelecionado.getId());
-            }
-            // Agenda para rodar novamente daqui a 5000ms
-            autoUpdateHandler.postDelayed(this, 500);
+            atualizarDashboardAutomaticamente();
+
+            autoUpdateHandler.postDelayed(this, 5000);
         }
     };
 
@@ -174,8 +176,28 @@ public class DashboardFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        // Quando o usuário for para outra tela, para as requisições imediatamente
+
+        // Para o próximo ciclo do polling
         autoUpdateHandler.removeCallbacks(autoUpdateRunnable);
+
+        // Invalida qualquer resposta de requisição antiga
+        cicloDashboard++;
+
+        // Cancela requisição dos dados
+        if (chamadaDashboard != null) {
+            chamadaDashboard.cancel();
+            chamadaDashboard = null;
+        }
+
+        // Cancela requisição dos alertas
+        if (chamadaAlertas != null) {
+            chamadaAlertas.cancel();
+            chamadaAlertas = null;
+        }
+
+        // Reseta o controle
+        atualizacaoDashboardEmAndamento = false;
+        requisicoesDashboardPendentes = 0;
     }
 
     private void carregarListaDeFornos() {
@@ -237,17 +259,39 @@ public class DashboardFragment extends Fragment {
         spinnerFornos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // 2. SEGURANÇA: Impede execução de callbacks do Spinner se mudar de aba
-                if (!isAdded() || getContext() == null || listaDeFornosDoUsuario == null) return;
 
-                FornoResponseDTO fornoSelecionado = listaDeFornosDoUsuario.get(position);
-                if (sessionManager != null) {
-                    sessionManager.salvarFornoSelecionado(fornoSelecionado.getId());
+                if (!isAdded() || getContext() == null ||
+                        listaDeFornosDoUsuario == null) {
+                    return;
                 }
 
-                // Dispara a carga dos dados com segurança
-                carregarDadosDoDashboard(fornoSelecionado.getId(), fornoSelecionado.getNome());
-                carregarAlertasReaisNoDashboard(fornoSelecionado.getId());
+                FornoResponseDTO fornoSelecionado =
+                        listaDeFornosDoUsuario.get(position);
+
+                if (sessionManager != null) {
+                    sessionManager.salvarFornoSelecionado(
+                            fornoSelecionado.getId()
+                    );
+                }
+
+                // Cancela qualquer atualização anterior
+                cicloDashboard++;
+
+                if (chamadaDashboard != null) {
+                    chamadaDashboard.cancel();
+                    chamadaDashboard = null;
+                }
+
+                if (chamadaAlertas != null) {
+                    chamadaAlertas.cancel();
+                    chamadaAlertas = null;
+                }
+
+                atualizacaoDashboardEmAndamento = false;
+                requisicoesDashboardPendentes = 0;
+
+                // Faz uma nova atualização controlada
+                atualizarDashboardAutomaticamente();
             }
 
             @Override
@@ -255,61 +299,160 @@ public class DashboardFragment extends Fragment {
         });
     }
 
-    private void carregarDadosDoDashboard(String fornoId, String nomeForno) {
+    private void carregarDadosDoDashboard(String fornoId, String nomeForno, long cicloAtual) {
+
         ApiService apiService = RetrofitClient.getApiService(requireContext());
-        apiService.getDashboard(fornoId).enqueue(new Callback<DashboardDTO>() {
+
+        chamadaDashboard = apiService.getDashboard(fornoId);
+
+        chamadaDashboard.enqueue(new Callback<DashboardDTO>() {
+
             @Override
-            public void onResponse(Call<DashboardDTO> call, Response<DashboardDTO> response) {
+            public void onResponse(
+                    @NonNull Call<DashboardDTO> call,
+                    @NonNull Response<DashboardDTO> response) {
+
+                // Ignora resposta de um ciclo antigo
+                if (cicloAtual != cicloDashboard || !isAdded()) {
+                    return;
+                }
+
                 if (response.isSuccessful() && response.body() != null) {
-                    vincularDadosNaTela(response.body(), nomeForno);
+                    vincularDadosNaTela(
+                            response.body(),
+                            nomeForno
+                    );
                 } else {
-                    vincularDadosNaTela(null, nomeForno);
+                    vincularDadosNaTela(
+                            null,
+                            nomeForno
+                    );
                 }
+
+                if (chamadaDashboard == call) {
+                    chamadaDashboard = null;
+                }
+
+                finalizarRequisicaoDashboard(cicloAtual);
             }
 
             @Override
-            public void onFailure(Call<DashboardDTO> call, Throwable t) {
-                vincularDadosNaTela(null, nomeForno);
-            }
-        });
-    }
+            public void onFailure(
+                    @NonNull Call<DashboardDTO> call,
+                    @NonNull Throwable t) {
 
-    private void carregarAlertasReaisNoDashboard(String fornoId) {
-        ApiService apiService = RetrofitClient.getApiService(requireContext());
+                // Ignora resposta de um ciclo antigo
+                if (cicloAtual != cicloDashboard || !isAdded()) {
+                    return;
+                }
 
-        apiService.getAlertasDoForno(fornoId).enqueue(new Callback<List<EventoDTO>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<EventoDTO>> call, @NonNull Response<List<EventoDTO>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<EventoDTO> todosEventos = response.body();
-
-                    // Ordena do mais recente para o mais antigo
-                    java.util.Collections.sort(todosEventos, (e1, e2) -> {
-                        if (e1.getCriadoEm() == null) return 1;
-                        if (e2.getCriadoEm() == null) return -1;
-                        return e2.getCriadoEm().compareTo(e1.getCriadoEm());
-                    });
-
-                    List<EventoDTO> novosAlertas = todosEventos.subList(0, Math.min(todosEventos.size(), 3));
-
-                    // SÓ atualiza a tela se os dados realmente mudarem na API
-                    if (saoListasDiferentes(listaAlertasDashboard, novosAlertas)) {
-                        listaAlertasDashboard.clear();
-                        listaAlertasDashboard.addAll(novosAlertas);
-                        eventoAdapter.notifyDataSetChanged();
+                // Se foi cancelada, não precisa alterar a tela
+                if (call.isCanceled()) {
+                    if (chamadaDashboard == call) {
+                        chamadaDashboard = null;
                     }
-                } else if (!listaAlertasDashboard.isEmpty()) {
-                    listaAlertasDashboard.clear();
-                    eventoAdapter.notifyDataSetChanged();
+                    return;
                 }
-            }
 
-            @Override
-            public void onFailure(@NonNull Call<List<EventoDTO>> call, @NonNull Throwable t) {
-                // Silencioso para não interromper o polling rápido
+                vincularDadosNaTela(
+                        null,
+                        nomeForno
+                );
+
+                if (chamadaDashboard == call) {
+                    chamadaDashboard = null;
+                }
+
+                finalizarRequisicaoDashboard(cicloAtual);
             }
         });
     }
+    private void carregarAlertasReaisNoDashboard(
+            String fornoId,
+            long cicloAtual) {
+
+        ApiService apiService =
+                RetrofitClient.getApiService(requireContext());
+
+        chamadaAlertas =
+                apiService.getUltimos3AlertasDoForno(fornoId);
+
+        chamadaAlertas.enqueue(
+                new Callback<List<EventoDTO>>() {
+
+                    @Override
+                    public void onResponse(
+                            @NonNull Call<List<EventoDTO>> call,
+                            @NonNull Response<List<EventoDTO>> response) {
+
+                        // Ignora respostas de ciclos antigos
+                        if (cicloAtual != cicloDashboard ||
+                                !isAdded()) {
+                            return;
+                        }
+
+                        if (response.isSuccessful()
+                                && response.body() != null) {
+
+                            List<EventoDTO> novosAlertas =
+                                    response.body();
+
+                            if (saoListasDiferentes(
+                                    listaAlertasDashboard,
+                                    novosAlertas)) {
+
+                                listaAlertasDashboard.clear();
+
+                                listaAlertasDashboard.addAll(
+                                        novosAlertas
+                                );
+
+                                eventoAdapter.notifyDataSetChanged();
+                            }
+
+                        } else if (!listaAlertasDashboard.isEmpty()) {
+
+                            listaAlertasDashboard.clear();
+                            eventoAdapter.notifyDataSetChanged();
+                        }
+
+                        if (chamadaAlertas == call) {
+                            chamadaAlertas = null;
+                        }
+
+                        finalizarRequisicaoDashboard(
+                                cicloAtual
+                        );
+                    }
+
+                    @Override
+                    public void onFailure(
+                            @NonNull Call<List<EventoDTO>> call,
+                            @NonNull Throwable t) {
+
+                        // Ignora respostas de ciclos antigos
+                        if (cicloAtual != cicloDashboard ||
+                                !isAdded()) {
+                            return;
+                        }
+
+                        if (chamadaAlertas == call) {
+                            chamadaAlertas = null;
+                        }
+
+                        // Se foi cancelada, não altera a tela
+                        if (call.isCanceled()) {
+                            return;
+                        }
+
+                        finalizarRequisicaoDashboard(
+                                cicloAtual
+                        );
+                    }
+                }
+        );
+    }
+
 
     // Metodo que compara se os ultimos alertas são iguais
     private boolean saoListasDiferentes(List<EventoDTO> atual, List<EventoDTO> nova) {
@@ -731,4 +874,59 @@ public class DashboardFragment extends Fragment {
             return dataIso;
         }
     }
+
+
+    private void atualizarDashboardAutomaticamente() {
+
+        if (!isAdded() || getContext() == null) {
+            return;
+        }
+
+        if (spinnerFornos == null || spinnerFornos.getSelectedItem() == null) {
+            return;
+        }
+
+        if (atualizacaoDashboardEmAndamento) {
+            return;
+        }
+
+        FornoResponseDTO fornoSelecionado =
+                (FornoResponseDTO) spinnerFornos.getSelectedItem();
+
+        // Identifica este ciclo de atualização
+        long cicloAtual = ++cicloDashboard;
+
+        atualizacaoDashboardEmAndamento = true;
+        requisicoesDashboardPendentes = 2;
+
+        carregarDadosDoDashboard(
+                fornoSelecionado.getId(),
+                fornoSelecionado.getNome(),
+                cicloAtual
+        );
+
+        carregarAlertasReaisNoDashboard(
+                fornoSelecionado.getId(),
+                cicloAtual
+        );
+    }
+
+
+
+    private void finalizarRequisicaoDashboard(long cicloAtual) {
+
+        // Ignora respostas de ciclos antigos
+        if (cicloAtual != cicloDashboard) {
+            return;
+        }
+
+        if (requisicoesDashboardPendentes > 0) {
+            requisicoesDashboardPendentes--;
+        }
+
+        if (requisicoesDashboardPendentes == 0) {
+            atualizacaoDashboardEmAndamento = false;
+        }
+    }
+
 }
