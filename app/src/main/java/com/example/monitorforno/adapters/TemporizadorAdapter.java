@@ -20,7 +20,7 @@ import java.util.TimeZone;
 public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapter.ViewHolder> {
 
     public interface OnTemporizadorInteractionListener {
-        void onTemporizadorRemovido(String id, int position);
+        void onTemporizadorRemovido(String id);
     }
 
     private final List<TemporizadorResponseDTO> temporizadores;
@@ -50,7 +50,7 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
         holder.imgExcluir.setOnClickListener(v -> {
             int posicaoAtual = holder.getAdapterPosition();
             if (posicaoAtual != RecyclerView.NO_POSITION) {
-                listener.onTemporizadorRemovido(item.getId(), posicaoAtual);
+                listener.onTemporizadorRemovido(item.getId());
             }
         });
     }

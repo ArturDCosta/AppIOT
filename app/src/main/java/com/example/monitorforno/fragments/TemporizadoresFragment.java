@@ -88,12 +88,12 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
 
             new android.app.DatePickerDialog(getContext(), (view1, year, month, dayOfMonth) -> {
                 ano = year;
-                mes = month + 1;
+                mes = month;
                 dia = dayOfMonth;
 
                 new android.app.TimePickerDialog(getContext(), (view2, hourOfDay, minute) -> {
                     horaFimSelecionada = String.format(Locale.getDefault(), "%02d:%02d:00", hourOfDay, minute);
-                    String textoExibicao = String.format(Locale.getDefault(), "Fim: %02d/%02d/%04d às %02d:%02d", dia, mes, ano, hourOfDay, minute);
+                    String textoExibicao = String.format(Locale.getDefault(), "Fim: %02d/%02d/%04d às %02d:%02d", dia, mes + 1, ano, hourOfDay, minute);
                     txtFimSelecionado.setText(textoExibicao);
                 }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show();
             }, anoAtual, mesAtual, diaAtual).show();
@@ -118,14 +118,14 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
             String isoHorarioInicio;
             if (horaInicioSelecionada != null) {
                 Calendar calInicio = Calendar.getInstance();
-                calInicio.set(ano, mes - 1, dia, Integer.parseInt(horaInicioSelecionada.substring(0,2)), Integer.parseInt(horaInicioSelecionada.substring(3,5)), 0);
+                calInicio.set(ano, mes, dia, Integer.parseInt(horaInicioSelecionada.substring(0,2)), Integer.parseInt(horaInicioSelecionada.substring(3,5)), 0);
                 isoHorarioInicio = sdfIso.format(calInicio.getTime());
             } else {
                 isoHorarioInicio = sdfIso.format(new java.util.Date());
             }
 
             Calendar calFim = Calendar.getInstance();
-            calFim.set(ano, mes - 1, dia, Integer.parseInt(horaFimSelecionada.substring(0,2)), Integer.parseInt(horaFimSelecionada.substring(3,5)), 0);
+            calFim.set(ano, mes, dia, Integer.parseInt(horaFimSelecionada.substring(0,2)), Integer.parseInt(horaFimSelecionada.substring(3,5)), 0);
             String isoHorarioFim = sdfIso.format(calFim.getTime());
 
             if (calFim.getTimeInMillis() <= System.currentTimeMillis()) {
@@ -160,11 +160,13 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
         runnableMonitor = new Runnable() {
             @Override
             public void run() {
-                verificarTemporizadoresExpirados();
-                handlerMonitor.postDelayed(this, 5000);
+
+                // Busca a situação atualizada diretamente da API
+                carregarTemporizadoresDaApi();
+
+                handlerMonitor.postDelayed(this, 30000);
             }
         };
-
         carregarTemporizadoresDaApi();
         return view;
     }
@@ -209,75 +211,64 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
     }
 
     private void verificarTemporizadoresExpirados() {
+
         if (temporizadores.isEmpty()) {
             txtProximoTempo.setText("Sem temporizadores\nmarcados");
             txtProximoTempo.setTextSize(22f);
             return;
         }
 
-        TemporizadorResponseDTO proximo = null;
-        long menorTempoRestante = Long.MAX_VALUE;
-        long agora = System.currentTimeMillis();
+        SimpleDateFormat sdfEntrada = new SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                Locale.getDefault()
+        );
 
-        // 1. Lemos estritamente como UTC
-        SimpleDateFormat sdfEntrada = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
         sdfEntrada.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-        // 2. Formatamos para a tela estritamente no fuso local do celular (ex: UTC-3)
-        SimpleDateFormat formatoVisor = new SimpleDateFormat("HH:mm\ndd/MM/yyyy", Locale.getDefault());
+        SimpleDateFormat formatoVisor = new SimpleDateFormat(
+                "HH:mm\ndd/MM/yyyy",
+                Locale.getDefault()
+        );
+
         formatoVisor.setTimeZone(TimeZone.getDefault());
 
-        List<TemporizadorResponseDTO> listaExpirados = new ArrayList<>();
+        java.util.Date proximaData = null;
 
         for (TemporizadorResponseDTO t : temporizadores) {
-            try {
-                String horaFimStr = t.getHorarioFim();
-                if (horaFimStr == null) continue;
 
-                String dataLimpa = horaFimStr.split("\\.")[0];
-                if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
+            try {
+
+                String horarioFim = t.getHorarioFim();
+
+                if (horarioFim == null) continue;
+
+                String dataLimpa = horarioFim.split("\\.")[0];
+
+                if (!dataLimpa.endsWith("Z")) {
+                    dataLimpa += "Z";
+                }
 
                 java.util.Date dataFim = sdfEntrada.parse(dataLimpa);
 
                 if (dataFim != null) {
-                    long tempoFim = dataFim.getTime();
 
-                    if (tempoFim <= agora) {
-                        listaExpirados.add(t);
-                    } else {
-                        long diff = tempoFim - agora;
-                        if (diff < menorTempoRestante) {
-                            menorTempoRestante = diff;
-                            proximo = t;
-                        }
+                    if (proximaData == null || dataFim.before(proximaData)) {
+                        proximaData = dataFim;
                     }
                 }
+
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e("TEMPORIZADOR", "Erro ao interpretar horário de término.");
             }
         }
 
-        for (TemporizadorResponseDTO exp : listaExpirados) {
-            temporizadores.remove(exp);
-            excluirTemporizadorAutomaticamente(String.valueOf(exp.getId()));
-        }
+        if (proximaData != null) {
 
-        if (!listaExpirados.isEmpty()) {
-            adapter.notifyDataSetChanged();
-        }
+            txtProximoTempo.setText(formatoVisor.format(proximaData));
+            txtProximoTempo.setTextSize(36f);
 
-        if (proximo != null) {
-            try {
-                String dataLimpa = proximo.getHorarioFim().split("\\.")[0];
-                if (!dataLimpa.endsWith("Z")) dataLimpa += "Z";
-
-                java.util.Date dataFimObj = sdfEntrada.parse(dataLimpa);
-                txtProximoTempo.setText(formatoVisor.format(dataFimObj));
-                txtProximoTempo.setTextSize(36f);
-            } catch (Exception e) {
-                txtProximoTempo.setText(proximo.getHorarioFim());
-            }
         } else {
+
             txtProximoTempo.setText("Sem temporizadores\nmarcados");
             txtProximoTempo.setTextSize(22f);
         }
@@ -293,22 +284,61 @@ public class TemporizadoresFragment extends Fragment implements TemporizadorAdap
     }
 
     @Override
-    public void onTemporizadorRemovido(String id, int position) {
+    public void onTemporizadorRemovido(String id) {
+
         if (id == null) return;
 
-        RetrofitClient.getApiService(getContext()).deletarTemporizador(id).enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    temporizadores.remove(position);
-                    adapter.notifyItemRemoved(position);
-                    adapter.notifyItemRangeChanged(position, temporizadores.size());
-                    Toast.makeText(getContext(), "Temporizador cancelado", Toast.LENGTH_SHORT).show();
-                    verificarTemporizadoresExpirados();
-                }
-            }
-            @Override
-            public void onFailure(Call<Void> call, Throwable t) {}
-        });
+        RetrofitClient.getApiService(requireContext())
+                .deletarTemporizador(id)
+                .enqueue(new Callback<Void>() {
+
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+
+                        if (response.isSuccessful()) {
+
+                            int posicaoAtual = -1;
+
+                            // Procura novamente o temporizador pelo ID
+                            for (int i = 0; i < temporizadores.size(); i++) {
+
+                                if (id.equals(temporizadores.get(i).getId())) {
+                                    posicaoAtual = i;
+                                    break;
+                                }
+                            }
+
+                            // Remove somente se ainda estiver na lista
+                            if (posicaoAtual != -1) {
+                                temporizadores.remove(posicaoAtual);
+                                adapter.notifyItemRemoved(posicaoAtual);
+                            }
+
+                            Toast.makeText(
+                                    requireContext(),
+                                    "Temporizador cancelado",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+
+                            verificarTemporizadoresExpirados();
+
+                        } else {
+                            Toast.makeText(
+                                    requireContext(),
+                                    "Erro ao cancelar temporizador",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {
+                        Toast.makeText(
+                                requireContext(),
+                                "Falha ao cancelar temporizador",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                });
     }
 }
