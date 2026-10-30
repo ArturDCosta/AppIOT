@@ -24,6 +24,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -104,6 +105,10 @@ public class TemperaturaFragment extends Fragment {
                     @Override
                     public void onResponse(Call<TelemetriaResponseDTO> call, Response<TelemetriaResponseDTO> response) {
                         if (response.isSuccessful() && response.body() != null) {
+                            Gson gson = new Gson();
+                            String json = gson.toJson(response.body());
+
+                            Log.d("API_TEMPERATURA", "Resposta JSON: " + json);
                             TelemetriaResponseDTO telemetria = response.body();
 
                             String estadoForno = telemetria.getEstadoForno() != null ? telemetria.getEstadoForno() : "FORNO_DESLIGADO";
@@ -279,15 +284,19 @@ public class TemperaturaFragment extends Fragment {
     }
 
     private String formatarHora(String dataIso) {
-        if (dataIso == null || !dataIso.contains("T")) {
-            return dataIso != null ? dataIso : "--:--:--";
+
+        if (dataIso == null || dataIso.isEmpty()) {
+            return "--:--:--";
         }
+
         try {
-            String horaComMilissegundos = dataIso.split("T")[1];
-            if (horaComMilissegundos.length() >= 8) {
-                return horaComMilissegundos.substring(0, 8);
-            }
-            return horaComMilissegundos;
+            java.time.OffsetDateTime dataComFuso =
+                    java.time.OffsetDateTime.parse(dataIso);
+
+            return dataComFuso
+                    .atZoneSameInstant(java.time.ZoneId.systemDefault())
+                    .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
+
         } catch (Exception e) {
             return dataIso;
         }

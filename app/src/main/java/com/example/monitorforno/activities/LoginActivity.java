@@ -119,7 +119,7 @@ public class LoginActivity extends AppCompatActivity {
                     irParaMain();
                 } else {
                     int codigoErro = response.code();
-                    Log.e("Login", "Erro da API. Código: " + codigoErro);
+                    Log.e("Login", "Falha na conexão com o servidor.");
 
                     if (codigoErro == 401) {
                         Toast.makeText(LoginActivity.this, "Senha ou email incorreto. Verifique os dados e tente novamente.", Toast.LENGTH_LONG).show();
