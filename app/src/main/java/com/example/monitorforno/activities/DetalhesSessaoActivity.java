@@ -101,7 +101,7 @@ public class DetalhesSessaoActivity extends AppCompatActivity {
         if (sessao.getDuracaoSegundos() != null) {
             long totalSeg = sessao.getDuracaoSegundos();
             long horas = totalSeg / 3600;
-            long min = totalSeg / 60;
+            long min = (totalSeg % 3600) / 60;
             long seg = totalSeg % 60;
 
             if (horas > 0) {
