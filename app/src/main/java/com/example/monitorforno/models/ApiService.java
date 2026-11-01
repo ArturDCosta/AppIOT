@@ -92,10 +92,8 @@ public interface ApiService {
     @GET("v1/eventos/fornos/{fornoId}")
     Call<List<EventoDTO>> getAlertasDoForno(@Path("fornoId") String fornoId);
 
-    @GET("v1/eventos/fornos/{fornoId}/recentes")
-    Call<List<EventoDTO>> getUltimos3AlertasDoForno(
-            @Path("fornoId") String fornoId
-    );
+    @GET("v1/eventos/fornos/{fornoId}/ultimos-tres")
+    Call<List<EventoDTO>> getUltimos3AlertasDoForno(@Path("fornoId") String fornoId);
 
     // Alteração de senha quando logado
     @PUT("v1/usuario/alterar-minha-senha")

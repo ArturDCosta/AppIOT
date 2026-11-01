@@ -1,3 +1,4 @@
+
 package com.example.monitorforno.adapters;
 
 import android.view.LayoutInflater;
@@ -13,6 +14,7 @@ import com.example.monitorforno.R;
 import com.example.monitorforno.models.TemporizadorResponseDTO;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -40,6 +42,7 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+
         TemporizadorResponseDTO item = temporizadores.get(position);
 
         String inicio = formatarHoraInstant(item.getHorarioInicio());
@@ -48,30 +51,53 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
         holder.txtHorario.setText("Duração: " + inicio + " até " + fim);
 
         holder.imgExcluir.setOnClickListener(v -> {
+
             int posicaoAtual = holder.getAdapterPosition();
+
             if (posicaoAtual != RecyclerView.NO_POSITION) {
-                listener.onTemporizadorRemovido(item.getId());
+
+                TemporizadorResponseDTO temporizadorAtual = temporizadores.get(posicaoAtual);
+
+                if (temporizadorAtual.getId() != null) {
+                    listener.onTemporizadorRemovido(temporizadorAtual.getId());
+                }
             }
         });
     }
 
+    // Converte o horário UTC recebido da API para o horário local do celular.
     private String formatarHoraInstant(String instantString) {
-        if (instantString == null) return "00:00";
-        try {
-            // Retira a parte fracionada e o Z
-            String dataLimpa = instantString.split("\\.")[0].replace("Z", "");
 
-            // Entrada configurada como UTC
-            SimpleDateFormat sdfEntrada = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+        if (instantString == null || instantString.isEmpty()) return "--:--";
+
+        try {
+            String dataLimpa = instantString;
+
+            // Remove milissegundos, se existirem.
+            int ponto = dataLimpa.indexOf(".");
+            if (ponto != -1) {
+                dataLimpa = dataLimpa.substring(0, ponto) + "Z";
+            }
+
+            // Garante o Z no final.
+            if (!dataLimpa.endsWith("Z")) {
+                dataLimpa += "Z";
+            }
+
+            SimpleDateFormat sdfEntrada = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
             sdfEntrada.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-            java.util.Date data = sdfEntrada.parse(dataLimpa);
+            Date data = sdfEntrada.parse(dataLimpa);
 
-            // Saída configurada para o horário local (Locale.getDefault() já utiliza a default TimeZone)
+            if (data == null) return "--:--";
+
             SimpleDateFormat sdfSaida = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            sdfSaida.setTimeZone(TimeZone.getDefault());
+
             return sdfSaida.format(data);
+
         } catch (Exception e) {
-            return instantString;
+            return "--:--";
         }
     }
 
@@ -81,11 +107,13 @@ public class TemporizadorAdapter extends RecyclerView.Adapter<TemporizadorAdapte
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
+
         TextView txtHorario;
         ImageView imgExcluir;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+
             txtHorario = itemView.findViewById(R.id.txtHorarioTemporizador);
             imgExcluir = itemView.findViewById(R.id.imgExcluir);
         }
