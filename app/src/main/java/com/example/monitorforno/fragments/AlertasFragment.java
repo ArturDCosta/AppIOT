@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.annotation.Nullable;
 
 import com.example.monitorforno.R;
 import com.example.monitorforno.adapters.EventoAdapter;
@@ -51,9 +52,15 @@ public class AlertasFragment extends Fragment {
         sessionManager = new SessionManager(requireContext());
 
         atualizarEstatisticasVazias();
-        buscarAlertasDaApi();
 
         return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        buscarAlertasDaApi();
     }
 
     private boolean viewAtiva() {
@@ -131,9 +138,15 @@ public class AlertasFragment extends Fragment {
             @Override
             public void onResponse(@NonNull Call<List<EventoDTO>> call, @NonNull Response<List<EventoDTO>> response) {
 
+                Log.d("ALERTAS_API", "Código HTTP: " + response.code());
+
                 if (response.isSuccessful() && response.body() != null) {
 
                     List<EventoDTO> eventosDaApi = response.body();
+
+                    Log.d("ALERTAS_API",
+                            "Quantidade de eventos recebidos: " +
+                                    (eventosDaApi == null ? "null" : eventosDaApi.size()));
 
                     Collections.sort(eventosDaApi, (e1, e2) -> {
                         if (e1.getCriadoEm() == null) return e2.getCriadoEm() == null ? 0 : 1;
@@ -150,16 +163,29 @@ public class AlertasFragment extends Fragment {
 
                     atualizarEstatisticasVazias();
 
+                    String detalheErro = "";
+
+                    try {
+                        if (response.errorBody() != null) {
+                            detalheErro = response.errorBody().string();
+                        }
+                    } catch (Exception e) {
+                        Log.e("ALERTAS_API", "Erro ao ler resposta da API.", e);
+                    }
+
+                    Log.e("ALERTAS_API",
+                            "Erro HTTP: " + response.code() + " - " + detalheErro);
+
                     Toast.makeText(requireContext(),
-                            "Sem alertas para exibir.",
-                            Toast.LENGTH_SHORT).show();
+                            "Erro ao carregar alertas: " + response.code(),
+                            Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<List<EventoDTO>> call, @NonNull Throwable t) {
 
-                Log.e("Alertas", "Falha na conexão: " + t.getMessage());
+                Log.e("ALERTAS_API", "Falha na conexão com a API.", t);
 
                 atualizarEstatisticasVazias();
 
