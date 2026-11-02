@@ -34,6 +34,18 @@ import retrofit2.Response;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.content.ContentResolver;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class PerfilFragment extends Fragment {
 
@@ -45,6 +57,12 @@ public class PerfilFragment extends Fragment {
     private boolean usuarioJaPossuiFoto = false; // Controle para saber se chama POST ou PUT
     private final List<Call<?>> chamadasAtivas = new ArrayList<>();
     private final List<android.app.AlertDialog> dialogsAbertos = new ArrayList<>();
+    // Processamento de imagens fora da UI Thread
+    private final ExecutorService executorImagens = Executors.newSingleThreadExecutor();
+    private final Handler handlerPrincipal = new Handler(Looper.getMainLooper());
+    private Future<?> tarefaImagem;
+    // Dimensões máximas da imagem
+    private static final int TAMANHO_MAXIMO_FOTO = 400;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -167,6 +185,12 @@ public class PerfilFragment extends Fragment {
 
         cancelarChamadas();
 
+        // Cancela o processamento de imagem pendente
+        if (tarefaImagem != null) {
+            tarefaImagem.cancel(true);
+            tarefaImagem = null;
+        }
+
         for (android.app.AlertDialog dialog : new ArrayList<>(dialogsAbertos)) {
             if (dialog.isShowing()) {
                 dialog.dismiss();
@@ -186,6 +210,11 @@ public class PerfilFragment extends Fragment {
         cardMeusConvites = null;
 
         super.onDestroyView();
+    }
+    @Override
+    public void onDestroy() {
+        executorImagens.shutdownNow();
+        super.onDestroy();
     }
 
     private void buscarPerfilNaApi() {
@@ -605,34 +634,169 @@ public class PerfilFragment extends Fragment {
         });
     }
 
-    private void processarEEnviarFoto(android.net.Uri uri) {
-        try {
-            if (!viewAtiva()) return;
-            java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
-            android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(inputStream);
+    private void processarEEnviarFoto(Uri uri) {
 
-            if (bitmap == null) {
-                Toast.makeText(getContext(), "Não foi possível carregar a imagem.", Toast.LENGTH_SHORT).show();
-                return;
+        if (!viewAtiva() || uri == null) return;
+
+        // Captura o ContentResolver antes de iniciar a tarefa.
+        ContentResolver resolver = requireContext().getContentResolver();
+
+        tarefaImagem = executorImagens.submit(() -> {
+
+            Bitmap bitmap = null;
+
+            try {
+
+                // Decodifica a imagem usando amostragem.
+                bitmap = decodificarImagemDaGaleria(resolver, uri);
+
+                if (bitmap == null) {
+                    throw new IllegalArgumentException("Imagem inválida.");
+                }
+
+                String base64Image;
+
+                // Comprime e converte para Base64.
+                try (ByteArrayOutputStream outputStream =
+                             new ByteArrayOutputStream()) {
+
+                    boolean sucesso = bitmap.compress(
+                            Bitmap.CompressFormat.JPEG,
+                            80,
+                            outputStream
+                    );
+
+                    if (!sucesso) {
+                        throw new IllegalStateException(
+                                "Não foi possível comprimir a imagem."
+                        );
+                    }
+
+                    byte[] byteArray = outputStream.toByteArray();
+
+                    base64Image = android.util.Base64.encodeToString(
+                            byteArray,
+                            android.util.Base64.NO_WRAP
+                    );
+                }
+
+                String imagemFinal = base64Image;
+
+                // Volta para a thread principal para enviar à API.
+                handlerPrincipal.post(() -> {
+
+                    if (!viewAtiva()) return;
+
+                    enviarFotoParaApi(imagemFinal);
+                });
+
+            } catch (Exception e) {
+
+                Log.e("API_FOTO", "Erro ao processar imagem.", e);
+
+                handlerPrincipal.post(() -> {
+
+                    if (!viewAtiva()) return;
+
+                    Toast.makeText(
+                            requireContext(),
+                            "Erro ao processar imagem.",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                });
+
+            } catch (OutOfMemoryError e) {
+
+                Log.e("API_FOTO", "Memória insuficiente ao processar imagem.", e);
+
+                handlerPrincipal.post(() -> {
+
+                    if (!viewAtiva()) return;
+
+                    Toast.makeText(
+                            requireContext(),
+                            "Imagem muito grande. Escolha outra foto.",
+                            Toast.LENGTH_LONG
+                    ).show();
+                });
+
+            } finally {
+
+                // Libera a memória ocupada pelo Bitmap.
+                if (bitmap != null && !bitmap.isRecycled()) {
+                    bitmap.recycle();
+                }
+            }
+        });
+    }
+
+    private Bitmap decodificarImagemDaGaleria(
+            ContentResolver resolver,
+            Uri uri
+    ) throws Exception {
+
+        BitmapFactory.Options opcoes = new BitmapFactory.Options();
+
+        // Primeiro, verifica as dimensões sem carregar a imagem.
+        opcoes.inJustDecodeBounds = true;
+
+        try (InputStream inputStream = resolver.openInputStream(uri)) {
+
+            if (inputStream == null) {
+                return null;
             }
 
-            // Redimensiona para evitar Strings Base64 gigantescas que pesam no banco de dados (Max 400x400)
-            android.graphics.Bitmap resizedBitmap = android.graphics.Bitmap.createScaledBitmap(bitmap, 400, 400, true);
+            BitmapFactory.decodeStream(inputStream, null, opcoes);
+        }
 
-            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
-            resizedBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, outputStream);
-            byte[] byteArray = outputStream.toByteArray();
+        if (opcoes.outWidth <= 0 || opcoes.outHeight <= 0) {
+            return null;
+        }
 
-            String base64Image = android.util.Base64.encodeToString(byteArray, android.util.Base64.NO_WRAP);
+        // Calcula o fator de redução.
+        opcoes.inSampleSize = calcularInSampleSize(
+                opcoes,
+                TAMANHO_MAXIMO_FOTO,
+                TAMANHO_MAXIMO_FOTO
+        );
 
-            enviarFotoParaApi(base64Image);
+        opcoes.inJustDecodeBounds = false;
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(getContext(), "Erro ao processar imagem.", Toast.LENGTH_SHORT).show();
+        // Abre novamente o arquivo para decodificar a imagem.
+        try (InputStream inputStream = resolver.openInputStream(uri)) {
+
+            if (inputStream == null) {
+                return null;
+            }
+
+            return BitmapFactory.decodeStream(
+                    inputStream,
+                    null,
+                    opcoes
+            );
         }
     }
 
+    private int calcularInSampleSize(
+            BitmapFactory.Options opcoes,
+            int larguraMaxima,
+            int alturaMaxima
+    ) {
+
+        int larguraOriginal = opcoes.outWidth;
+        int alturaOriginal = opcoes.outHeight;
+
+        int tamanhoAmostra = 1;
+
+        while (
+                larguraOriginal / tamanhoAmostra > larguraMaxima ||
+                        alturaOriginal / tamanhoAmostra > alturaMaxima
+        ) {
+            tamanhoAmostra *= 2;
+        }
+
+        return tamanhoAmostra;
+    }
 
     private void enviarFotoParaApi(String base64Image) {
 
@@ -698,18 +862,90 @@ public class PerfilFragment extends Fragment {
 
 
     private void exibirImagemBase64(String base64Str) {
-        try {
-            if (!viewAtiva() || imgFotoPerfil == null) return;
-            byte[] decodedString = android.util.Base64.decode(base64Str, android.util.Base64.DEFAULT);
-            android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-            imgFotoPerfil.setImageBitmap(decodedByte);
 
-            // Oculta o card do lápis assim que a foto for carregada com sucesso
-            if (cardIconeEdicao != null) {
-                cardIconeEdicao.setVisibility(View.GONE);
-            }
-        } catch (Exception e) {
-            Log.e("DECODE_IMAGE", "Erro ao renderizar base64: " + e.getMessage());
+        if (!viewAtiva() || base64Str == null || base64Str.isEmpty()) {
+            return;
         }
+
+        tarefaImagem = executorImagens.submit(() -> {
+
+            Bitmap bitmap = null;
+
+            try {
+
+                // Converte Base64 em bytes.
+                byte[] imagemBytes = android.util.Base64.decode(
+                        base64Str,
+                        android.util.Base64.DEFAULT
+                );
+
+                // Primeiro verifica as dimensões da imagem.
+                BitmapFactory.Options opcoes = new BitmapFactory.Options();
+                opcoes.inJustDecodeBounds = true;
+
+                BitmapFactory.decodeByteArray(
+                        imagemBytes,
+                        0,
+                        imagemBytes.length,
+                        opcoes
+                );
+
+                if (opcoes.outWidth <= 0 || opcoes.outHeight <= 0) {
+                    throw new IllegalArgumentException("Imagem inválida.");
+                }
+
+                // Calcula a redução necessária.
+                opcoes.inSampleSize = calcularInSampleSize(
+                        opcoes,
+                        TAMANHO_MAXIMO_FOTO,
+                        TAMANHO_MAXIMO_FOTO
+                );
+
+                opcoes.inJustDecodeBounds = false;
+
+                // Decodifica a imagem reduzida.
+                bitmap = BitmapFactory.decodeByteArray(
+                        imagemBytes,
+                        0,
+                        imagemBytes.length,
+                        opcoes
+                );
+
+                if (bitmap == null) {
+                    throw new IllegalArgumentException(
+                            "Não foi possível decodificar a imagem."
+                    );
+                }
+
+                Bitmap imagemFinal = bitmap;
+
+                // Atualiza a ImageView na UI Thread.
+                handlerPrincipal.post(() -> {
+
+                    if (!viewAtiva() || imgFotoPerfil == null) {
+
+                        imagemFinal.recycle();
+                        return;
+                    }
+
+                    imgFotoPerfil.setImageBitmap(imagemFinal);
+
+                    if (cardIconeEdicao != null) {
+                        cardIconeEdicao.setVisibility(View.GONE);
+                    }
+                });
+
+                // A Bitmap será liberada pela ImageView quando
+                // uma nova imagem substituir a atual.
+
+            } catch (Exception e) {
+
+                Log.e("DECODE_IMAGE", "Erro ao renderizar Base64.", e);
+
+            } catch (OutOfMemoryError e) {
+
+                Log.e("DECODE_IMAGE", "Memória insuficiente para carregar foto.", e);
+            }
+        });
     }
 }
