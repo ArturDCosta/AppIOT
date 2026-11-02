@@ -1,9 +1,11 @@
+
 package com.example.monitorforno.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
@@ -36,9 +38,6 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNavigationView = findViewById(R.id.bottomNavigation);
 
-        // Fragment inicial
-        replaceFragment(new DashboardFragment());
-
         bottomNavigationView.setOnItemSelectedListener(item -> {
 
             int id = item.getItemId();
@@ -63,10 +62,17 @@ public class MainActivity extends AppCompatActivity {
         });
 
         bottomNavigationView.setOnItemReselectedListener(item -> {
-            // Não faz absolutamente nada!
-            // Isso impede o app de recriar o fragment e disparar chamadas repetidas.
-            Log.d("NAV", "Usuário clicou na mesma aba, clique ignorado com sucesso.");
+            Log.d("NAV", "Aba selecionada novamente. Clique ignorado.");
         });
+
+        // Cria o Dashboard somente na primeira abertura da Activity.
+        if (savedInstanceState == null) {
+            replaceFragment(new DashboardFragment());
+
+            bottomNavigationView.getMenu()
+                    .findItem(R.id.nav_dashboard)
+                    .setChecked(true);
+        }
     }
 
     private void replaceFragment(Fragment fragment) {
