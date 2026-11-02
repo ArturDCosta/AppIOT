@@ -167,6 +167,6 @@ public interface ApiService {
     // ==========================================
     // MUTAR BUZZER
     // ==========================================
-    @POST("v1/fornos/mutar-buzzer/{serialNumber}")
+    @POST("v1/fornos/{serialNumber}/silenciar-buzzer")
     Call<Void> mutarBuzzer(@Path("serialNumber") String serialNumber);
 }

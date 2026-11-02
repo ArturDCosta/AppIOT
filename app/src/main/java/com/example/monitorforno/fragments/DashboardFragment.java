@@ -521,21 +521,37 @@ public class DashboardFragment extends Fragment {
         txtTemporizador.setText(dados.getProximoTemporizador() != null ? formatarTemporizador(dados.getProximoTemporizador()) : "--");
 
         String estadoSistema = dados.getEstadoSistema() != null ? dados.getEstadoSistema() : "--";
-        txtSistema.setText(estadoSistema);
-        txtEstadoSistema.setText(estadoSistema);
 
-        if ("SEGURO".equals(estadoSistema) || "OPERACAO_NORMAL".equals(estadoSistema)) {
-            txtEstadoSistema.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alerta_verde));
-            btnMutarBuzzer.setVisibility(View.GONE);
-        } else if ("ALERTA".equals(estadoSistema)) {
-            txtEstadoSistema.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alerta_laranja));
-            btnMutarBuzzer.setVisibility(View.VISIBLE);
-        } else if ("CRITICO".equals(estadoSistema)) {
-            txtEstadoSistema.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alerta_vermelho));
-            btnMutarBuzzer.setVisibility(View.VISIBLE);
-        } else {
-            txtEstadoSistema.setTextColor(Color.GRAY);
-            btnMutarBuzzer.setVisibility(View.GONE);
+        txtSistema.setText(estadoSistema);
+        txtEstadoSistema.setText(estadoSistema.replace("_", " "));
+
+        switch (estadoSistema) {
+            case "SEGURO":
+                txtEstadoSistema.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alerta_verde ));
+                btnMutarBuzzer.setVisibility(View.GONE);
+                break;
+
+            case "ALERTA":
+                txtEstadoSistema.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alerta_laranja));
+                btnMutarBuzzer.setVisibility(View.VISIBLE);
+                break;
+
+            case "CRITICO":
+                txtEstadoSistema.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alerta_vermelho));
+                btnMutarBuzzer.setVisibility(View.VISIBLE);
+                break;
+
+            case "ERRO_SENSOR":
+                txtEstadoSistema.setTextColor(Color.GRAY);
+                btnMutarBuzzer.setVisibility(View.VISIBLE);
+                break;
+
+            case "INICIANDO":
+
+            default:
+                txtEstadoSistema.setTextColor(Color.GRAY);
+                btnMutarBuzzer.setVisibility(View.GONE);
+                break;
         }
 
         String estadoForno = dados.getEstadoForno();

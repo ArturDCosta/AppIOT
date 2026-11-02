@@ -4,6 +4,7 @@ public class FornoResponseDTO {
     private String id;
     private String serialNumber;
     private String nome;
+    private boolean muted;
 
     public String getId() { return id; }
     public String getSerialNumber() { return serialNumber; }
@@ -13,5 +14,8 @@ public class FornoResponseDTO {
     @Override
     public String toString() {
         return getNome();
+    }
+    public boolean isMuted() {
+        return muted;
     }
 }
