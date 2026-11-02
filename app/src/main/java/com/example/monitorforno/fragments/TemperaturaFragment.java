@@ -57,6 +57,7 @@ public class TemperaturaFragment extends Fragment {
 
     private boolean telemetriaEmAndamento = false;
     private boolean historicoEmAndamento = false;
+    private boolean avisoFornoIdExibido = false;
 
     private Call<TelemetriaResponseDTO> telemetriaCall;
     private Call<List<TemperaturaDTO>> historicoCall;
@@ -81,7 +82,13 @@ public class TemperaturaFragment extends Fragment {
         }
 
         if (fornoId == null || fornoId.isEmpty()) {
-            Toast.makeText(getContext(), "Erro: ID do forno não recebido!", Toast.LENGTH_SHORT).show();
+
+            if (!avisoFornoIdExibido) {
+                Toast.makeText(requireContext(),
+                        "Erro: ID do forno não recebido!", Toast.LENGTH_SHORT).show();
+
+                avisoFornoIdExibido = true;
+            }
         }
 
         btnVoltar.setOnClickListener(v -> {
@@ -112,6 +119,10 @@ public class TemperaturaFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+
+        if (fornoId == null || fornoId.isEmpty()) {
+            return;
+        }
 
         handler.removeCallbacks(runnableTelemetria);
         handler.removeCallbacks(runnableHistorico);

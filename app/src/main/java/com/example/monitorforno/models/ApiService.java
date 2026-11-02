@@ -11,10 +11,10 @@ public interface ApiService {
     // TOKENS
     // ==========================================
 
-    @POST("auth/refresh")
+    @PUT("v1/auth/renovar-refresh-token")
     Call<RefreshTokenResponseDTO> renovarToken(@Body RefreshTokenRequestDTO request);
 
-    @POST("auth/logout")
+    @HTTP(method = "DELETE", path = "v1/auth/logout", hasBody = true)
     Call<Void> logout(@Body RefreshTokenRequestDTO request);
 
     // ==========================================

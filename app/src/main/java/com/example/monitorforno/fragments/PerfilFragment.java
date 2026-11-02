@@ -32,6 +32,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PerfilFragment extends Fragment {
 
     private TextView txtNomePerfil, txtEmailPerfil, txtNome, txtEmail, txtNascimento;
@@ -40,6 +43,8 @@ public class PerfilFragment extends Fragment {
     private MaterialCardView cardMeusConvites;
     private androidx.activity.result.ActivityResultLauncher<String> galeriaLauncher;
     private boolean usuarioJaPossuiFoto = false; // Controle para saber se chama POST ou PUT
+    private final List<Call<?>> chamadasAtivas = new ArrayList<>();
+    private final List<android.app.AlertDialog> dialogsAbertos = new ArrayList<>();
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -107,10 +112,86 @@ public class PerfilFragment extends Fragment {
         return view;
     }
 
+    private boolean viewAtiva() {
+        return isAdded() && getView() != null && getContext() != null;
+    }
+
+    private <T> void executarComProtecao(Call<T> call, Callback<T> callback) {
+
+        chamadasAtivas.add(call);
+
+        call.enqueue(new Callback<T>() {
+
+            @Override
+            public void onResponse(Call<T> call, Response<T> response) {
+
+                chamadasAtivas.remove(call);
+
+                if (call.isCanceled() || !viewAtiva()) return;
+
+                callback.onResponse(call, response);
+            }
+
+            @Override
+            public void onFailure(Call<T> call, Throwable t) {
+
+                chamadasAtivas.remove(call);
+
+                if (call.isCanceled() || !viewAtiva()) return;
+
+                callback.onFailure(call, t);
+            }
+        });
+    }
+
+    private void cancelarChamadas() {
+
+        for (Call<?> call : new ArrayList<>(chamadasAtivas)) {
+            call.cancel();
+        }
+
+        chamadasAtivas.clear();
+    }
+
+    private void mostrarDialogSeguro(android.app.AlertDialog dialog) {
+
+        dialogsAbertos.add(dialog);
+
+        dialog.setOnDismissListener(d -> dialogsAbertos.remove(dialog));
+
+        dialog.show();
+    }
+
+    @Override
+    public void onDestroyView() {
+
+        cancelarChamadas();
+
+        for (android.app.AlertDialog dialog : new ArrayList<>(dialogsAbertos)) {
+            if (dialog.isShowing()) {
+                dialog.dismiss();
+            }
+        }
+
+        dialogsAbertos.clear();
+
+        txtNomePerfil = null;
+        txtEmailPerfil = null;
+        txtNome = null;
+        txtEmail = null;
+        txtNascimento = null;
+
+        imgFotoPerfil = null;
+        cardIconeEdicao = null;
+        cardMeusConvites = null;
+
+        super.onDestroyView();
+    }
+
     private void buscarPerfilNaApi() {
         ApiService apiService = RetrofitClient.getApiService(requireContext());
 
-        apiService.getMeuPerfil().enqueue(new Callback<PerfilDTO>() {
+        executarComProtecao(apiService.getMeuPerfil(), new Callback<PerfilDTO>() {
             @Override
             public void onResponse(Call<PerfilDTO> call, Response<PerfilDTO> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -170,7 +251,7 @@ public class PerfilFragment extends Fragment {
 
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
 
-        dialog.show();
+        mostrarDialogSeguro(dialog);
     }
 
     private void confirmarExclusaoFoto() {
@@ -194,13 +275,13 @@ public class PerfilFragment extends Fragment {
             deletarFotoDaApi(dialog); // Passamos o dialog para fechá-lo depois
         });
 
-        dialog.show();
+        mostrarDialogSeguro(dialog);
     }
 
     private void deletarFotoDaApi(android.app.AlertDialog dialog) {
         ApiService apiService = RetrofitClient.getApiService(requireContext());
 
-        apiService.deletarFotoPerfil().enqueue(new Callback<Void>() {
+        executarComProtecao(apiService.deletarFotoPerfil(), new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 dialog.dismiss(); // Fecha o popup
@@ -260,7 +341,7 @@ public class PerfilFragment extends Fragment {
             ApiService apiService = RetrofitClient.getApiService(requireContext());
             SolicitarTrocaEmailDTO dto = new SolicitarTrocaEmailDTO(senhaAtual, novoEmail);
 
-            apiService.solicitarTrocaEmail(dto).enqueue(new Callback<okhttp3.ResponseBody>() {
+            executarComProtecao(apiService.solicitarTrocaEmail(dto), new Callback<okhttp3.ResponseBody>() {
                 @Override
                 public void onResponse(Call<okhttp3.ResponseBody> call, Response<okhttp3.ResponseBody> response) {
                     dialog.dismiss();
@@ -295,7 +376,7 @@ public class PerfilFragment extends Fragment {
             });
         });
 
-        dialog.show();
+        mostrarDialogSeguro(dialog);
     }
 
     private void exibirDialogAlterarSenha() {
@@ -339,7 +420,7 @@ public class PerfilFragment extends Fragment {
         });
 
         // Mostra o dialog
-        dialog.show();
+        mostrarDialogSeguro(dialog);
     }
 
     private void exibirMenuConfiguracoes(View view) {
@@ -395,7 +476,7 @@ public class PerfilFragment extends Fragment {
             ApiService apiService = RetrofitClient.getApiService(requireContext());
 
             // A chamada deve ser vazia, pois o RetrofitClient (Interceptor) injetará o token
-            apiService.deletarUsuario().enqueue(new Callback<Void>() {
+            executarComProtecao(apiService.deletarUsuario(), new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
                     dialog.dismiss();
@@ -432,14 +513,14 @@ public class PerfilFragment extends Fragment {
             });
         });
 
-        dialog.show();
+        mostrarDialogSeguro(dialog);
     }
 
     private void alterarSenhaNaApi(String senhaAtual, String novaSenha, android.app.AlertDialog dialog) {
         ApiService apiService = RetrofitClient.getApiService(requireContext());
         NovaSenhaLogadoDTO dto = new NovaSenhaLogadoDTO(novaSenha, senhaAtual);
 
-        apiService.alterarMinhaSenha(dto).enqueue(new Callback<Void>() {
+        executarComProtecao(apiService.alterarMinhaSenha(dto), new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
@@ -474,7 +555,7 @@ public class PerfilFragment extends Fragment {
             ApiService apiService = RetrofitClient.getApiService(requireContext());
 
             // 2. Passar o objeto DTO para a chamada
-            apiService.logout(requestDTO).enqueue(new Callback<Void>() {
+            executarComProtecao(apiService.logout(requestDTO), new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
                     finalizarLogoutLocal(sessionManager);
@@ -506,7 +587,7 @@ public class PerfilFragment extends Fragment {
 
     private void buscarFotoPerfilNaApi() {
         ApiService apiService = RetrofitClient.getApiService(requireContext());
-        apiService.getFotoPerfil().enqueue(new Callback<FotoPerfilResponseDTO>() {
+        executarComProtecao(apiService.getFotoPerfil(), new Callback<FotoPerfilResponseDTO>() {
             @Override
             public void onResponse(Call<FotoPerfilResponseDTO> call, Response<FotoPerfilResponseDTO> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getFotoBase64() != null) {
@@ -526,8 +607,14 @@ public class PerfilFragment extends Fragment {
 
     private void processarEEnviarFoto(android.net.Uri uri) {
         try {
+            if (!viewAtiva()) return;
             java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
             android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(inputStream);
+
+            if (bitmap == null) {
+                Toast.makeText(getContext(), "Não foi possível carregar a imagem.", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             // Redimensiona para evitar Strings Base64 gigantescas que pesam no banco de dados (Max 400x400)
             android.graphics.Bitmap resizedBitmap = android.graphics.Bitmap.createScaledBitmap(bitmap, 400, 400, true);
@@ -546,9 +633,24 @@ public class PerfilFragment extends Fragment {
         }
     }
 
+
     private void enviarFotoParaApi(String base64Image) {
+
+        if (!viewAtiva()) return;
+
+        SessionManager sessionManager = new SessionManager(requireContext());
+        String usuarioId = sessionManager.getUserId();
+
+        if (usuarioId == null || usuarioId.isEmpty()) {
+            Toast.makeText(getContext(),
+                    "Não foi possível identificar o usuário. Faça login novamente.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
         ApiService apiService = RetrofitClient.getApiService(requireContext());
-        FotoPerfilRequestDTO dto = new FotoPerfilRequestDTO(base64Image);
+
+        FotoPerfilRequestDTO dto = new FotoPerfilRequestDTO(base64Image, usuarioId);
 
         Call<FotoPerfilResponseDTO> call;
 
@@ -558,30 +660,46 @@ public class PerfilFragment extends Fragment {
             call = apiService.setFotoPerfil(dto);
         }
 
-        call.enqueue(new Callback<FotoPerfilResponseDTO>() {
+        executarComProtecao(call, new Callback<FotoPerfilResponseDTO>() {
+
             @Override
             public void onResponse(Call<FotoPerfilResponseDTO> call, Response<FotoPerfilResponseDTO> response) {
+
                 if (response.isSuccessful() && response.body() != null) {
-                    Toast.makeText(getContext(), "Foto de perfil updated!", Toast.LENGTH_SHORT).show();
+
+                    Toast.makeText(getContext(),
+                            "Foto de perfil atualizada!",
+                            Toast.LENGTH_SHORT).show();
+
                     exibirImagemBase64(response.body().getFotoBase64());
                     usuarioJaPossuiFoto = true;
+
                 } else {
-                    // CORREÇÃO: Removido a linha com erro de digitação do 'Toast.org.json...'
+
                     Log.e("API_FOTO", "Erro ao salvar: " + response.code());
-                    Toast.makeText(getContext(), "Erro ao salvar foto no servidor.", Toast.LENGTH_SHORT).show();
+
+                    Toast.makeText(getContext(),
+                            "Erro ao salvar foto no servidor: " + response.code(),
+                            Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<FotoPerfilResponseDTO> call, Throwable t) {
-                Toast.makeText(getContext(), "Falha de conexão com o servidor.", Toast.LENGTH_SHORT).show();
+
+                Log.e("API_FOTO", "Falha ao enviar foto: " + t.getMessage());
+
+                Toast.makeText(getContext(),
+                        "Falha de conexão com o servidor.",
+                        Toast.LENGTH_SHORT).show();
             }
         });
     }
 
+
     private void exibirImagemBase64(String base64Str) {
         try {
-            if (imgFotoPerfil == null) return;
+            if (!viewAtiva() || imgFotoPerfil == null) return;
             byte[] decodedString = android.util.Base64.decode(base64Str, android.util.Base64.DEFAULT);
             android.graphics.Bitmap decodedByte = android.graphics.BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
             imgFotoPerfil.setImageBitmap(decodedByte);

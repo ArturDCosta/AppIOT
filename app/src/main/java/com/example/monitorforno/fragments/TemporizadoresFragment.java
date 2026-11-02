@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -35,6 +36,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import java.util.ArrayList;
+import retrofit2.Call;
+
 public class TemporizadoresFragment extends Fragment
         implements TemporizadorAdapter.OnTemporizadorInteractionListener {
 
@@ -54,6 +58,8 @@ public class TemporizadoresFragment extends Fragment
 
     private final Handler handlerMonitor = new Handler();
     private Runnable runnableMonitor;
+    private final List<Call<?>> chamadasAtivas = new ArrayList<>();
+    private boolean carregamentoEmAndamento = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -202,9 +208,11 @@ public class TemporizadoresFragment extends Fragment
             // A validação do horário fica por conta do backend.
             TemporizadorRequestDTO request = new TemporizadorRequestDTO(isoHorarioInicio, isoHorarioFim);
 
-            RetrofitClient.getApiService(getContext())
-                    .criarTemporizador(fornoId, request)
-                    .enqueue(new Callback<Void>() {
+            Call<Void> call = RetrofitClient
+                    .getApiService(requireContext())
+                    .criarTemporizador(fornoId, request);
+
+            executarComProtecao(call, new Callback<Void>() {
 
                         @Override
                         public void onResponse(Call<Void> call, Response<Void> response) {
@@ -238,9 +246,8 @@ public class TemporizadoresFragment extends Fragment
             @Override
             public void run() {
 
-                if (!isAdded()) return;
+                if (!viewAtiva()) return;
 
-                // O aplicativo apenas consulta o backend.
                 carregarTemporizadoresDaApi();
 
                 handlerMonitor.postDelayed(this, 5000);
@@ -253,12 +260,71 @@ public class TemporizadoresFragment extends Fragment
         return view;
     }
 
+    private boolean viewAtiva() {
+        return isAdded() && getView() != null && getContext() != null;
+    }
+
+    private <T> void executarComProtecao(Call<T> call, Callback<T> callback) {
+
+        chamadasAtivas.add(call);
+
+        call.enqueue(new Callback<T>() {
+
+            @Override
+            public void onResponse(@NonNull Call<T> call, @NonNull Response<T> response) {
+
+                chamadasAtivas.remove(call);
+
+                if (call.isCanceled() || !viewAtiva()) return;
+
+                callback.onResponse(call, response);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<T> call, @NonNull Throwable t) {
+
+                chamadasAtivas.remove(call);
+
+                if (call.isCanceled() || !viewAtiva()) return;
+
+                callback.onFailure(call, t);
+            }
+        });
+    }
+
+    private void cancelarChamadas() {
+
+        for (Call<?> call : new ArrayList<>(chamadasAtivas)) {
+            call.cancel();
+        }
+
+        chamadasAtivas.clear();
+    }
+
+    @Override
+    public void onDestroyView() {
+
+        if (runnableMonitor != null) {
+            handlerMonitor.removeCallbacks(runnableMonitor);
+        }
+
+        cancelarChamadas();
+        carregamentoEmAndamento = false;
+
+        cardProximoTemporizador = null;
+        txtProximoTempo = null;
+        adapter = null;
+
+        super.onDestroyView();
+    }
+
     // CICLO DE VIDA
     @Override
     public void onResume() {
         super.onResume();
 
-        if (runnableMonitor != null) {
+        if (runnableMonitor != null && getView() != null) {
+            handlerMonitor.removeCallbacks(runnableMonitor);
             handlerMonitor.postDelayed(runnableMonitor, 5000);
         }
     }
@@ -275,43 +341,50 @@ public class TemporizadoresFragment extends Fragment
     // BUSCAR TEMPORIZADORES
     private void carregarTemporizadoresDaApi() {
 
-        if (!isAdded()) return;
+        if (!viewAtiva() || carregamentoEmAndamento) return;
 
         SessionManager sessionManager = new SessionManager(requireContext());
         String fornoId = sessionManager.getFornoSelecionadoId();
 
         if (fornoId == null || fornoId.isEmpty()) return;
 
-        RetrofitClient.getApiService(requireContext())
-                .getTemporizadoresPorForno(fornoId)
-                .enqueue(new Callback<List<TemporizadorResponseDTO>>() {
+        carregamentoEmAndamento = true;
 
-                    @Override
-                    public void onResponse(Call<List<TemporizadorResponseDTO>> call, Response<List<TemporizadorResponseDTO>> response) {
+        Call<List<TemporizadorResponseDTO>> call = RetrofitClient
+                .getApiService(requireContext())
+                .getTemporizadoresPorForno(fornoId);
 
-                        if (!isAdded()) return;
+        executarComProtecao(call, new Callback<List<TemporizadorResponseDTO>>() {
 
-                        if (response.isSuccessful() && response.body() != null) {
+            @Override
+            public void onResponse(Call<List<TemporizadorResponseDTO>> call,
+                                   Response<List<TemporizadorResponseDTO>> response) {
 
-                            temporizadores.clear();
+                carregamentoEmAndamento = false;
 
-                            // O backend informa quais temporizadores já foram executados.
-                            for (TemporizadorResponseDTO t : response.body()) {
-                                if (!t.isExecutado()) {
-                                    temporizadores.add(t);
-                                }
-                            }
+                if (response.isSuccessful() && response.body() != null) {
 
-                            adapter.notifyDataSetChanged();
-                            atualizarProximoTemporizador();
+                    temporizadores.clear();
+
+                    for (TemporizadorResponseDTO t : response.body()) {
+                        if (!t.isExecutado()) {
+                            temporizadores.add(t);
                         }
                     }
 
-                    @Override
-                    public void onFailure(Call<List<TemporizadorResponseDTO>> call, Throwable t) {
-                        Log.e("TEMPORIZADOR", "Falha ao consultar temporizadores.");
-                    }
-                });
+                    adapter.notifyDataSetChanged();
+                    atualizarProximoTemporizador();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<TemporizadorResponseDTO>> call, Throwable t) {
+
+                carregamentoEmAndamento = false;
+
+                Log.e("TEMPORIZADOR", "Falha ao consultar temporizadores: " + t.getMessage());
+            }
+        });
     }
 
     // MOSTRAR PRÓXIMO TEMPORIZADOR
@@ -379,9 +452,11 @@ public class TemporizadoresFragment extends Fragment
 
         if (id == null || id.isEmpty()) return;
 
-        RetrofitClient.getApiService(requireContext())
-                .deletarTemporizador(id)
-                .enqueue(new Callback<Void>() {
+        Call<Void> call = RetrofitClient
+                .getApiService(requireContext())
+                .deletarTemporizador(id);
+
+        executarComProtecao(call, new Callback<Void>() {
 
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {

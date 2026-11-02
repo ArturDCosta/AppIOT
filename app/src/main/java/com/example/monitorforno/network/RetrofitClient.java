@@ -1,7 +1,7 @@
+
 package com.example.monitorforno.network;
 
 import android.content.Context;
-import android.content.Intent;
 
 import com.example.monitorforno.models.ApiService;
 import com.example.monitorforno.utils.SessionManager;
@@ -10,14 +10,14 @@ import com.google.gson.GsonBuilder;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
 
-    private static final String BASE_URL = "https://monitoramentoforno.com.br";
+    public static final String BASE_URL = "https://monitoramentoforno.com.br/";
+
     private static Retrofit instance;
 
     private static Retrofit getInstance(Context context) {
@@ -27,7 +27,6 @@ public class RetrofitClient {
             Context appContext = context.getApplicationContext();
             SessionManager sessionManager = new SessionManager(appContext);
 
-            // Desativa logs HTTP para impedir exposição de dados sensíveis.
             HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
             logging.setLevel(HttpLoggingInterceptor.Level.NONE);
 
@@ -38,48 +37,29 @@ public class RetrofitClient {
                         Request original = chain.request();
                         Request.Builder requestBuilder = original.newBuilder();
 
-                        String tokenFormatado = sessionManager.getTokenFormatado();
-
-                        if (tokenFormatado != null) {
-                            requestBuilder.header("Authorization", tokenFormatado);
-                        }
-
-                        Request request = requestBuilder.build();
-
-                        Response response = chain.proceed(request);
-
                         String caminho = original.url().encodedPath();
 
-                        boolean requisicaoDeLogin = caminho.endsWith("/v1/auth/login");
+                        // Endpoints que não precisam de access token.
+                        boolean endpointPublico =
+                                caminho.endsWith("/auth/login") ||
+                                        caminho.endsWith("/auth/renovar-refresh-token") ||
+                                        caminho.endsWith("/auth/logout") ||
+                                        caminho.endsWith("/auth/esqueci-minha-senha") ||
+                                        caminho.endsWith("/auth/redefinir-senha") ||
+                                        caminho.endsWith("/auth/reverter-email");
 
-                        boolean possuiAutenticacao = request.header("Authorization") != null;
+                        if (!endpointPublico) {
 
-                        if (response.code() == 401
-                                && possuiAutenticacao
-                                && !requisicaoDeLogin) {
+                            String tokenFormatado = sessionManager.getTokenFormatado();
 
-                            sessionManager.limparSessao();
-
-                            try {
-                                Intent intent = new Intent(
-                                        appContext,
-                                        Class.forName("com.example.monitorforno.activities.LoginActivity")
-                                );
-
-                                intent.setFlags(
-                                        Intent.FLAG_ACTIVITY_NEW_TASK |
-                                                Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                );
-
-                                appContext.startActivity(intent);
-
-                            } catch (ClassNotFoundException e) {
-                                // Não registrar informações de autenticação.
+                            if (tokenFormatado != null) {
+                                requestBuilder.header("Authorization", tokenFormatado);
                             }
                         }
 
-                        return response;
+                        return chain.proceed(requestBuilder.build());
                     })
+                    .authenticator(new TokenAuthenticator(appContext, BASE_URL))
                     .build();
 
             Gson gson = new GsonBuilder()
