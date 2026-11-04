@@ -6,6 +6,14 @@ import android.content.SharedPreferences;
 import androidx.security.crypto.EncryptedSharedPreferences;
 import androidx.security.crypto.MasterKey;
 
+import android.os.Build;
+
+import java.io.File;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+
+import javax.crypto.AEADBadTagException;
+
 public class SessionManager {
 
     private static final String PREFS_NAME = "monitor_forno_prefs";
@@ -19,42 +27,125 @@ public class SessionManager {
     private final SharedPreferences prefs;
     private final SharedPreferences securePrefs;
 
+
     public SessionManager(Context context) {
 
         Context appContext = context.getApplicationContext();
 
-        // Preferências comuns: dados que não são credenciais.
+        // Preferências comuns.
         prefs = appContext.getSharedPreferences(
                 PREFS_NAME,
                 Context.MODE_PRIVATE
         );
 
+        SharedPreferences preferenciasSeguras;
+
         try {
 
-            // Chave mestra protegida pelo Android Keystore.
-            MasterKey masterKey = new MasterKey.Builder(appContext)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build();
-
-            // Preferências criptografadas.
-            securePrefs = EncryptedSharedPreferences.create(
-                    appContext,
-                    SECURE_PREFS_NAME,
-                    masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            );
-
-            // Migra tokens antigos salvos sem criptografia.
-            migrarTokensAntigos();
+            // Primeira tentativa de abrir o armazenamento seguro.
+            preferenciasSeguras = criarPreferenciasSeguras(appContext);
 
         } catch (Exception e) {
-            throw new IllegalStateException(
-                    "Não foi possível inicializar o armazenamento seguro.",
-                    e
+
+            // Só tenta recuperar automaticamente quando
+            // encontramos uma falha de autenticação criptográfica.
+            if (!possuiAEADBadTag(e)) {
+                throw new IllegalStateException(
+                        "Não foi possível inicializar o armazenamento seguro.",
+                        e
+                );
+            }
+
+            try {
+
+                // Remove o arquivo criptografado inválido.
+                apagarPreferenciasSeguras(appContext);
+
+                // Apaga também os dados antigos da sessão.
+                prefs.edit()
+                        .remove(KEY_TOKEN)
+                        .remove(KEY_REFRESH_TOKEN)
+                        .remove(KEY_USER_ID)
+                        .remove(KEY_FORNO)
+                        .commit();
+
+                // Tenta criar um armazenamento criptografado novo.
+                preferenciasSeguras = criarPreferenciasSeguras(appContext);
+
+            } catch (Exception erroRecuperacao) {
+
+                erroRecuperacao.addSuppressed(e);
+
+                throw new IllegalStateException(
+                        "Não foi possível recuperar o armazenamento seguro.",
+                        erroRecuperacao
+                );
+            }
+        }
+
+        securePrefs = preferenciasSeguras;
+
+        // Migra tokens antigos, caso existam.
+        migrarTokensAntigos();
+    }
+
+
+    private SharedPreferences criarPreferenciasSeguras(Context context)
+            throws GeneralSecurityException, IOException {
+
+        MasterKey masterKey = new MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build();
+
+        return EncryptedSharedPreferences.create(
+                context,
+                SECURE_PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        );
+    }
+
+
+    private boolean possuiAEADBadTag(Throwable erro) {
+
+        Throwable atual = erro;
+
+        while (atual != null) {
+
+            if (atual instanceof AEADBadTagException) {
+                return true;
+            }
+
+            atual = atual.getCause();
+        }
+
+        return false;
+    }
+
+
+    private void apagarPreferenciasSeguras(Context context)
+            throws IOException {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+
+            context.deleteSharedPreferences(SECURE_PREFS_NAME);
+
+        } else {
+
+            File arquivo = new File(
+                    context.getApplicationInfo().dataDir,
+                    "shared_prefs/" + SECURE_PREFS_NAME + ".xml"
             );
+
+            if (arquivo.exists() && !arquivo.delete()) {
+                throw new IOException(
+                        "Não foi possível apagar as preferências criptografadas."
+                );
+            }
         }
     }
+
 
     private void migrarTokensAntigos() {
 
