@@ -497,7 +497,6 @@ public class PerfilFragment extends Fragment {
         btnNao.setOnClickListener(v -> dialog.dismiss());
 
         // Se clicar em sim, chama a API
-        // Se clicar em sim, chama a API
         btnSim.setOnClickListener(v -> {
             btnSim.setEnabled(false);
             btnSim.setText("Aguarde...");
