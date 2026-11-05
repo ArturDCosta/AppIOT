@@ -517,7 +517,7 @@ public class PerfilFragment extends Fragment {
                         btnSim.setEnabled(true);
                         btnSim.setText("Sim");
 
-                        // --- CAPTURA DETALHADA DO ERRO ---
+                        // --- CAPTURA DETALHADA DO ERRO ---x
                         String detalheErro = "Erro " + response.code();
                         try {
                             if (response.errorBody() != null) {
