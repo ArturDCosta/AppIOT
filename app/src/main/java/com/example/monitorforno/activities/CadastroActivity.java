@@ -19,7 +19,7 @@ import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
-import retrofit2.Response;
+import retrofit2.Response;import android.util.Patterns;
 
 public class CadastroActivity extends AppCompatActivity {
 
@@ -69,6 +69,7 @@ public class CadastroActivity extends AppCompatActivity {
                     // Guarda no formato que o Spring Boot exige: YYYY-MM-DD
                     dataFormatadaParaApi = String.format(Locale.getDefault(), "%d-%02d-%02d", year, (monthOfYear + 1), dayOfMonth);
                 }, ano, mes, dia);
+        datePickerDialog.getDatePicker().setMaxDate(c.getTimeInMillis());
         datePickerDialog.show();
     }
 
@@ -77,7 +78,7 @@ public class CadastroActivity extends AppCompatActivity {
         String email = edtEmail.getText() != null ? edtEmail.getText().toString().trim() : "";
         String cpf = edtCpf.getText() != null ? edtCpf.getText().toString().trim().replaceAll("[^0-9]", "") : "";
         String senha = edtSenha.getText() != null ? edtSenha.getText().toString().trim() : "";
-        String regexSenha = "^(?=.*[A-Z])(?=.*\\d).{8,}$";
+        String regexSenha = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[^A-Za-z0-9\\s]).{8,}$";
 
         // Validações básicas locais
         if (nome.isEmpty()) {
@@ -85,8 +86,8 @@ public class CadastroActivity extends AppCompatActivity {
             edtNome.requestFocus();
             return;
         }
-        if (email.isEmpty()) {
-            edtEmail.setError("Informe o e-mail");
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            edtEmail.setError("Informe um e-mail válido");
             edtEmail.requestFocus();
             return;
         }
@@ -96,7 +97,7 @@ public class CadastroActivity extends AppCompatActivity {
             return;
         }
         if (senha.isEmpty() || !senha.matches(regexSenha) ) {
-            edtSenha.setError("A senha deve conter 8 caracteres, 1 letra maiúscula e 1 número.");
+            edtSenha.setError("A senha deve conter 8 caracteres, 1 letra maiúscula, 1 letra minúscula, 1 número e 1 caractere especial.");
             edtSenha.requestFocus();
             return;
         }
