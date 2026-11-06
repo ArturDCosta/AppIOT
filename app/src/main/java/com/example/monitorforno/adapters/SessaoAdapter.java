@@ -39,26 +39,16 @@ public class SessaoAdapter extends RecyclerView.Adapter<SessaoAdapter.ViewHolder
         holder.txtData.setText(formatarDataHora(inicioSessao, "dd/MM/yyyy"));
         holder.txtHorario.setText(formatarDataHora(inicioSessao, "HH:mm"));
 
-        long minutos = 0;
-        if (inicioSessao != null && sessao.getFimSessao() != null) {
-            try {
-                String inicioLimpo = inicioSessao.split("\\.")[0];
-                if (!inicioLimpo.endsWith("Z")) inicioLimpo += "Z";
-                String fimLimpo = sessao.getFimSessao().split("\\.")[0];
-                if (!fimLimpo.endsWith("Z")) fimLimpo += "Z";
+        long duracaoSegundos = sessao.getDuracaoSegundos();
 
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
-                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        long horas = duracaoSegundos / 3600;
+        long minutos = (duracaoSegundos % 3600) / 60;
 
-                java.util.Date dataInicio = sdf.parse(inicioLimpo);
-                java.util.Date dataFim = sdf.parse(fimLimpo);
-
-                if (dataInicio != null && dataFim != null) {
-                    minutos = Math.max(0, (dataFim.getTime() - dataInicio.getTime()) / 60000);
-                }
-            } catch (Exception ignored) {}
+        if (horas > 0) {
+            holder.txtDuracao.setText(horas + "h " + minutos + "min");
+        } else {
+            holder.txtDuracao.setText(minutos + " min");
         }
-        holder.txtDuracao.setText(minutos + " min");
 
         String estado = sessao.getEstadoFornoFinal() != null ? sessao.getEstadoFornoFinal() : "FORNO_DESLIGADO";
         holder.txtEstado.setText(estado.replace("FORNO_", ""));

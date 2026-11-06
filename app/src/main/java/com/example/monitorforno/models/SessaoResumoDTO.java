@@ -22,6 +22,9 @@ public class SessaoResumoDTO {
     @SerializedName("temperaturaMaxima")
     private Double temperaturaMaxima;
 
+    @SerializedName("duracaoSegundos")
+    private Long duracaoSegundos;
+
     // Getters
     public String getId() { return id; }
     public String getInicioSessao() { return inicioSessao; }
@@ -29,4 +32,5 @@ public class SessaoResumoDTO {
     public String getEstadoFornoFinal() { return estadoFornoFinal; }
     public String getEstadoSistemaFinal() { return estadoSistemaFinal; }
     public Double getTemperaturaMaxima() { return temperaturaMaxima != null ? temperaturaMaxima : 0.0; }
+    public Long getDuracaoSegundos() {return duracaoSegundos != null ? duracaoSegundos : 0L; }
 }

@@ -32,7 +32,7 @@ import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
-import retrofit2.Response;
+import retrofit2.Response;import android.util.Log;
 
 public class HistoricoFragment extends Fragment {
 
@@ -248,49 +248,13 @@ public class HistoricoFragment extends Fragment {
     private void calcularEstatisticasGlobais(List<SessaoResumoDTO> sessoes) {
         if (sessoes == null || sessoes.isEmpty()) {
             txtTotalSessoes.setText("Total de Sessões: 0");
-            txtTempoTotal.setText("Tempo Total: 0s");
             return;
         }
 
         int totalSessoes = sessoes.size();
-        long tempoTotalSegundos = 0;
-
-        for (SessaoResumoDTO sessao : sessoes) {
-            if (sessao.getInicioSessao() != null && sessao.getFimSessao() != null) {
-                try {
-                    String inicioLimpo = sessao.getInicioSessao().split("\\.")[0];
-                    if (!inicioLimpo.endsWith("Z")) inicioLimpo += "Z";
-                    String fimLimpo = sessao.getFimSessao().split("\\.")[0];
-                    if (!fimLimpo.endsWith("Z")) fimLimpo += "Z";
-
-                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault());
-                    sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-
-                    java.util.Date dataInicio = sdf.parse(inicioLimpo);
-                    java.util.Date dataFim = sdf.parse(fimLimpo);
-
-                    if (dataInicio != null && dataFim != null) {
-                        tempoTotalSegundos += Math.max(0, (dataFim.getTime() - dataInicio.getTime()) / 1000);
-                    }
-                } catch (Exception ignored) {}
-            }
-        }
-
-        long horas = tempoTotalSegundos / 3600;
-        long minutos = (tempoTotalSegundos % 3600) / 60;
-        long segundos = tempoTotalSegundos % 60;
 
         txtTotalSessoes.setText("Total de Sessões: " + totalSessoes);
-
-        if (horas > 0) {
-            txtTempoTotal.setText("Tempo Total: " + horas + "h " + minutos + "m");
-        } else if (minutos > 0) {
-            txtTempoTotal.setText("Tempo Total: " + minutos + "m " + segundos + "s");
-        } else {
-            txtTempoTotal.setText("Tempo Total: " + segundos + "s");
-        }
     }
-
     private void buscarTemperaturaMaximaNaApi() {
         String fornoId = sessionManager.getFornoSelecionadoId();
 
@@ -307,8 +271,24 @@ public class HistoricoFragment extends Fragment {
                 if (!isAdded() || getContext() == null) return;
 
                 if (response.isSuccessful() && response.body() != null) {
-                    double maxTemp = response.body().getTemperaturaMaxima();
+                    EstatisticasDTO estatisticas = response.body();
+
+                    double maxTemp = estatisticas.getTemperaturaMaxima();
                     txtMaiorTemperatura.setText("Maior Temperatura: " + Math.round(maxTemp) + "°C");
+
+                    long tempoTotalSegundos = estatisticas.getTempoTotalLigado();
+
+                    long horas = tempoTotalSegundos / 3600;
+                    long minutos = (tempoTotalSegundos % 3600) / 60;
+                    long segundos = tempoTotalSegundos % 60;
+
+                    if (horas > 0) {
+                        txtTempoTotal.setText("Tempo Total: " + horas + "h " + minutos + "m");
+                    } else if (minutos > 0) {
+                        txtTempoTotal.setText("Tempo Total: " + minutos + "m " + segundos + "s");
+                    } else {
+                        txtTempoTotal.setText("Tempo Total: " + segundos + "s");
+                    }
                 } else {
                     // 2. Mostra o código de erro exato da API
                     txtMaiorTemperatura.setText("Erro API: " + response.code());
