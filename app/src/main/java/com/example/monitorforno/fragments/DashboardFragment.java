@@ -83,7 +83,7 @@ public class DashboardFragment extends Fragment {
 
             atualizarDashboardAutomaticamente();
 
-            autoUpdateHandler.postDelayed(this, 2000);
+            autoUpdateHandler.postDelayed(this, 500);
         }
     };
 
@@ -913,7 +913,7 @@ public class DashboardFragment extends Fragment {
         long cicloAtual = ++cicloDashboard;
 
         atualizacaoDashboardEmAndamento = true;
-        requisicoesDashboardPendentes = 1;
+        requisicoesDashboardPendentes = 2;
 
         carregarDadosDoDashboard(
                 fornoSelecionado.getId(),
