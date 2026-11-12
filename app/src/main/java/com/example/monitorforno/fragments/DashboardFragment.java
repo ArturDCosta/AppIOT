@@ -66,10 +66,14 @@ public class DashboardFragment extends Fragment {
     private final List<EventoDTO> listaAlertasDashboard = new ArrayList<>();
 
     // =====================================================================
-    // 1. HANDLER E RUNNABLE (Para atualização automática a cada 5 segundos)
+    // 1. HANDLER E RUNNABLE (Para atualização automática a cada 500 ms)
     // =====================================================================
+    // O intervalo é curto de propósito: o usuário precisa ver o alerta de
+    // 250 °C a tempo de silenciar o buzzer. Para as requisições não se
+    // empilharem, um novo ciclo só começa quando o anterior terminou
+    // (ver atualizarDashboardAutomaticamente / finalizarRequisicaoDashboard).
     private Handler autoUpdateHandler = new Handler(Looper.getMainLooper());
-    // debug requicições
+    // true enquanto as 2 requisições do ciclo (dados + alertas) não responderam
     private boolean atualizacaoDashboardEmAndamento = false;
     private int requisicoesDashboardPendentes = 0;
     private long cicloDashboard = 0;
@@ -169,7 +173,7 @@ public class DashboardFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Quando o Dashboard abrir ou o usuário voltar para ele, inicia o loop de 5 em 5s
+        // Quando o Dashboard abrir ou o usuário voltar para ele, inicia o loop de 500 em 500 ms
         autoUpdateHandler.post(autoUpdateRunnable);
     }
 
