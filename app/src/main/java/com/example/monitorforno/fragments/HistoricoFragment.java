@@ -291,9 +291,8 @@ public class HistoricoFragment extends Fragment {
                     }
                 } else {
                     // 2. Mostra o código de erro exato da API
-                    txtMaiorTemperatura.setText("Erro API: " + response.code());
-                    Toast.makeText(getContext(), "Erro Temp: " + response.code(), Toast.LENGTH_LONG).show();
-                }
+                    txtMaiorTemperatura.setText("Indisponível");
+                    Toast.makeText(getContext(), com.example.monitorforno.utils.ErroApi.mensagem(response, "carregar as temperaturas"), Toast.LENGTH_LONG).show();                }
             }
 
             @Override

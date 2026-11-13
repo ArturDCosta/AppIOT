@@ -603,8 +603,7 @@ public class DashboardFragment extends Fragment {
                     carregarListaDeFornos();
 
                 } else {
-                    Toast.makeText(getContext(), "Erro ao vincular forno. Código: " + response.code(), Toast.LENGTH_LONG).show();
-                }
+                    Toast.makeText(getContext(), com.example.monitorforno.utils.ErroApi.mensagem(response, "vincular o forno"), Toast.LENGTH_LONG).show();                }
             }
 
             @Override
@@ -814,14 +813,7 @@ public class DashboardFragment extends Fragment {
                     Toast.makeText(getContext(), "Convite já enviado ou utilizador já vinculado.", Toast.LENGTH_SHORT).show();
                 } else {
                     // CAPTURA DO ERRO REAL DO SPRING BOOT
-                    try {
-                        String erroBackend = response.errorBody() != null ? response.errorBody().string() : "Corpo de erro vazio";
-                        Log.e("DEBUG_COMPARTILHAR", "Erro HTTP " + response.code() + " do Backend: " + erroBackend);
-                        Toast.makeText(getContext(), "Erro " + response.code() + ": " + erroBackend, Toast.LENGTH_LONG).show();
-                    } catch (Exception e) {
-                        Log.e("DEBUG_COMPARTILHAR", "Falha ao tentar ler a mensagem de erro HTTP " + response.code(), e);
-                        Toast.makeText(getContext(), "Erro HTTP " + response.code(), Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(getContext(), com.example.monitorforno.utils.ErroApi.mensagem(response, "enviar o convite"), Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -852,8 +844,7 @@ public class DashboardFragment extends Fragment {
                 if (response.isSuccessful()) {
                     Toast.makeText(getContext(), "Comando de silenciar enviado!", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getContext(), "Erro ao silenciar: " + response.code(), Toast.LENGTH_SHORT).show();
-                }
+                    Toast.makeText(getContext(), com.example.monitorforno.utils.ErroApi.mensagem(response, "silenciar o buzzer"), Toast.LENGTH_SHORT).show();                }
             }
 
             @Override

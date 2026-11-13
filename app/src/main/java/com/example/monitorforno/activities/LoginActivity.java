@@ -72,8 +72,7 @@ public class LoginActivity extends AppCompatActivity {
                 } else {
                     btnEntrar.setEnabled(true);
                     btnEntrar.setText("Entrar");
-                    Toast.makeText(LoginActivity.this, "Erro na sessão (Código: " + response.code() + ").", Toast.LENGTH_LONG).show();
-                }
+                    Toast.makeText(LoginActivity.this, com.example.monitorforno.utils.ErroApi.mensagem(response, "iniciar sua sessão"), Toast.LENGTH_LONG).show();                }
             }
 
             @Override
@@ -130,8 +129,7 @@ public class LoginActivity extends AppCompatActivity {
                     } else if (codigoErro == 500) {
                         Toast.makeText(LoginActivity.this, "O servidor está temporariamente indisponível. Tente novamente mais tarde.", Toast.LENGTH_LONG).show();
                     } else {
-                        Toast.makeText(LoginActivity.this, "Não foi possível realizar o login (Erro " + codigoErro + ").", Toast.LENGTH_SHORT).show();
-                    }
+                        Toast.makeText(LoginActivity.this, com.example.monitorforno.utils.ErroApi.mensagem(response, "realizar o login"), Toast.LENGTH_SHORT).show();                    }
                 }
             }
 

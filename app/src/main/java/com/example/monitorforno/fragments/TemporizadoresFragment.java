@@ -245,14 +245,8 @@ public class TemporizadoresFragment extends Fragment
                                 txtFimSelecionado.setText("Fim: Não selecionado");
 
                             } else {
-                                String detalhe = "";
-                                try {
-                                    if (response.errorBody() != null){
-                                        detalhe = response.errorBody().string();
-                                    }
-                                } catch (java.io.IOException ignored) {}
-                                Log.e("TEMPORIZADOR", "Erro " + response.code() + " ao criar: " + detalhe + " | inicio=" + request.getHorarioInicio() + " fim=" + request.getHorarioFim());
-                                Toast.makeText(getContext(), "Erro ao salvar (" + response.code() + "): " + detalhe, Toast.LENGTH_LONG).show();
+                                Log.e("TEMPORIZADOR", "Falha ao criar | inicio=" + request.getHorarioInicio() + " fim=" + request.getHorarioFim());
+                                Toast.makeText(getContext(), com.example.monitorforno.utils.ErroApi.mensagem(response, "salvar o temporizador"), Toast.LENGTH_LONG).show();
                             }
                         }
 
@@ -267,11 +261,8 @@ public class TemporizadoresFragment extends Fragment
         runnableMonitor = new Runnable() {
             @Override
             public void run() {
-
                 if (!viewAtiva()) return;
-
                 carregarTemporizadoresDaApi();
-
                 handlerMonitor.postDelayed(this, 5000);
             }
         };

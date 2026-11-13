@@ -160,25 +160,8 @@ public class AlertasFragment extends Fragment {
                     calcularEstatisticas(eventosDaApi);
 
                 } else {
-
                     atualizarEstatisticasVazias();
-
-                    String detalheErro = "";
-
-                    try {
-                        if (response.errorBody() != null) {
-                            detalheErro = response.errorBody().string();
-                        }
-                    } catch (Exception e) {
-                        Log.e("ALERTAS_API", "Erro ao ler resposta da API.", e);
-                    }
-
-                    Log.e("ALERTAS_API",
-                            "Erro HTTP: " + response.code() + " - " + detalheErro);
-
-                    Toast.makeText(requireContext(),
-                            "Erro ao carregar alertas: " + response.code(),
-                            Toast.LENGTH_LONG).show();
+                    Toast.makeText(requireContext(),com.example.monitorforno.utils.ErroApi.mensagem(response, "carregar os alertas"), Toast.LENGTH_LONG).show();
                 }
             }
 

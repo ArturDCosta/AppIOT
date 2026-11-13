@@ -390,9 +390,9 @@ public class PerfilFragment extends Fragment {
                         } else if (code == 400 || code == 409) {
                             Toast.makeText(getContext(), "O novo e-mail já está em uso por outra conta.", Toast.LENGTH_LONG).show();
                         } else if (code == 500) {
-                            Toast.makeText(getContext(), "Erro 500: Falha interna no servidor.", Toast.LENGTH_LONG).show();
+                            Toast.makeText(getContext(), "O servidor está com problemas. Tente novamente em instantes.", Toast.LENGTH_LONG).show();
                         } else {
-                            Toast.makeText(getContext(), "Erro " + code + " ao solicitar troca.", Toast.LENGTH_LONG).show();
+                            Toast.makeText(getContext(), com.example.monitorforno.utils.ErroApi.mensagem(response, "solicitar a troca de e-mail"), Toast.LENGTH_LONG).show();
                         }
                     }
                 }
@@ -518,15 +518,7 @@ public class PerfilFragment extends Fragment {
                         btnSim.setText("Sim");
 
                         // --- CAPTURA DETALHADA DO ERRO ---x
-                        String detalheErro = "Erro " + response.code();
-                        try {
-                            if (response.errorBody() != null) {
-                                detalheErro = response.errorBody().string();
-                                android.util.Log.e("ERRO_API", "Motivo: " + detalheErro);
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        String detalheErro = com.example.monitorforno.utils.ErroApi.mensagem(response, "excluir sua conta");
 
                         // Vai mostrar o motivo real na tela
                         Toast.makeText(getContext(), detalheErro, Toast.LENGTH_LONG).show();
@@ -841,9 +833,7 @@ public class PerfilFragment extends Fragment {
 
                     Log.e("API_FOTO", "Erro ao salvar: " + response.code());
 
-                    Toast.makeText(getContext(),
-                            "Erro ao salvar foto no servidor: " + response.code(),
-                            Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), com.example.monitorforno.utils.ErroApi.mensagem(response, "salvar sua foto"), Toast.LENGTH_SHORT).show();
                 }
             }
 
