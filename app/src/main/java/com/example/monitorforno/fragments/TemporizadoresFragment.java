@@ -179,6 +179,7 @@ public class TemporizadoresFragment extends Fragment
             sdfIso.setTimeZone(TimeZone.getTimeZone("UTC"));
 
             String isoHorarioInicio;
+            Date dataInicio;
 
             if (horaInicioSelecionada != null) {
 
@@ -187,13 +188,17 @@ public class TemporizadoresFragment extends Fragment
                 int horaInicio = Integer.parseInt(horaInicioSelecionada.substring(0, 2));
                 int minutoInicio = Integer.parseInt(horaInicioSelecionada.substring(3, 5));
 
-                calInicio.set(ano, mes, dia, horaInicio, minutoInicio, 0);
-                isoHorarioInicio = sdfIso.format(calInicio.getTime());
+                calInicio.set(Calendar.HOUR_OF_DAY, horaInicio);
+                calInicio.set(Calendar.MINUTE, minutoInicio);
+                calInicio.set(Calendar.SECOND, 0);
+                calInicio.set(Calendar.MILLISECOND, 0);
+                dataInicio = calInicio.getTime();
+                isoHorarioInicio = sdfIso.format(dataInicio);
 
             } else {
-
                 // Caso não escolha o início, utiliza o horário atual.
-                isoHorarioInicio = sdfIso.format(new Date());
+                dataInicio = new Date();
+                isoHorarioInicio = sdfIso.format(dataInicio);
             }
 
             // HORÁRIO DE FIM
@@ -202,6 +207,11 @@ public class TemporizadoresFragment extends Fragment
 
             Calendar calFim = Calendar.getInstance();
             calFim.set(ano, mes, dia, horaFim, minutoFim, 0);
+            calFim.set(Calendar.MILLISECOND, 0);
+            if (!calFim.getTime().after(dataInicio)) {
+                Toast.makeText(getContext(), "O fim precisa ser depois do início.", Toast.LENGTH_LONG).show();
+                return;
+                }
 
             String isoHorarioFim = sdfIso.format(calFim.getTime());
 
@@ -226,11 +236,23 @@ public class TemporizadoresFragment extends Fragment
                                 horaInicioSelecionada = null;
                                 horaFimSelecionada = null;
 
+                                Calendar hoje = Calendar.getInstance();
+                                ano = hoje.get(Calendar.YEAR);
+                                mes = hoje.get(Calendar.MONTH);
+                                dia = hoje.get(Calendar.DAY_OF_MONTH);
+
                                 txtInicioSelecionado.setText("Início: Não selecionado");
                                 txtFimSelecionado.setText("Fim: Não selecionado");
 
                             } else {
-                                Toast.makeText(getContext(), "Erro ao salvar: " + response.code(), Toast.LENGTH_SHORT).show();
+                                String detalhe = "";
+                                try {
+                                    if (response.errorBody() != null){
+                                        detalhe = response.errorBody().string();
+                                    }
+                                } catch (java.io.IOException ignored) {}
+                                Log.e("TEMPORIZADOR", "Erro " + response.code() + " ao criar: " + detalhe + " | inicio=" + request.getHorarioInicio() + " fim=" + request.getHorarioFim());
+                                Toast.makeText(getContext(), "Erro ao salvar (" + response.code() + "): " + detalhe, Toast.LENGTH_LONG).show();
                             }
                         }
 
